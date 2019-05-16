@@ -49,7 +49,6 @@ from pyzabbix import *
 from subprocess import call
 from daemon import Daemon
 import time
-import gtk
 import os
 import sys
 import getopt
@@ -58,6 +57,7 @@ import gobject
 import notify2
 import syslog
 import ConfigParser
+from dialog_nix import *
 
 
 class DataContainer:
@@ -69,6 +69,8 @@ class DataContainer:
 
         self.config_file = self.script_short_name + ".config"
         self.credentials_file = self.script_short_name + ".credentials"
+        # print self.config_file
+        # print self.credentials_file
         self.config = ConfigParser.ConfigParser()
 
         self.config.read(self.credentials_file)
@@ -93,6 +95,15 @@ class DataContainer:
                         "waw_player": "/usr/bin/mpv"
                         }
         self.config.read(self.config_file)
+
+        # self.zbxicon = self.config.get("zbxOptions", "icon")
+        # self.zbxinterval = int(self.config.get("zbxOptions", "interval"))
+        # self.zbxnotify = bool(self.config.get("zbxOptions", "notify"))
+        # self.zbxport = int(self.config.get("zbxOptions", "port"))
+        # self.zbxtext_mode = bool(self.config.get("zbxOptions", "text_mode"))
+        # self.zbxwav_player = self.config.get("zbxOptions", "wav_player")
+        # self.zbxwav = self.config.get("zbxOptions", "wav")
+
         try:
             self.zbxicon = self.config.get("zbxOptions", "icon")
         except:
@@ -122,68 +133,38 @@ class DataContainer:
         except:
             self.zbxwav = self.defaults["wav"]
 
+        print "-----------------"
+        print "passwd", self.zbxpasswd
+        print "user", self.zbxuser
+        print "host", self.zbxhost
+        print "url", self.zbxurl
+        print
+        print "icon", self.zbxicon
+        print "interval", self.zbxinterval
+        print "notify", self.zbxnotify
+        print "port", self.zbxport
+        print "text_mode", self.zbxtext_mode
+        print "wav_player", self.zbxwav_player
+        print "wav", self.zbxwav
+        print "-----------------"
+
         self.zbx_ver = ''
         self.zbx_ping = 'ok'
         self.zbx_connected = 'ok'  # ok, port_is_down, not_logged, err_getting_data_1, err_getting_data_2
         self.zbx_status = self.zbx_last_status = 'ok'  # ok, >>current stat<<
 
         if self.zbxpasswd is None:
-            print self.zbxhost, self.zbxuser
-            self.zbxpasswd = getpass.getpass(prompt="password: ")
-
-
-class MyDialog:
-
-    def getPasswd(self, passwd, host):
-        window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        window.set_size_request(350, 60)
-        window.set_position(gtk.WIN_POS_CENTER)
-        window.set_title(host + " - your ZBX password:")
-        window.connect("delete_event", lambda w, e: gtk.main_quit())
-        window.connect('key_press_event', self.escape)
-
-        vbox = gtk.VBox(False, 0)
-        window.add(vbox)
-        vbox.show()
-
-        entry = gtk.Entry()
-        entry.set_max_length(50)
-        entry.set_invisible_char("*")
-        entry.set_visibility(False)
-        entry.connect("activate", self.myCallback, entry, window, passwd)
-        vbox.pack_start(entry, True, True, 0)
-        entry.show()
-
-        hbox = gtk.HBox(False, 0)
-        vbox.add(hbox)
-        hbox.show()
-
-        button = gtk.Button(stock=gtk.STOCK_CANCEL)
-        button.connect("clicked", lambda w: sys.exit(2))
-        hbox.pack_start(button, True, True, 0)
-        button.set_flags(gtk.CAN_DEFAULT)
-        button.grab_default()
-        button.show()
-
-        button = gtk.Button(stock=gtk.STOCK_OK)
-        button.connect("clicked", self.myCallback, entry, window, passwd)
-        hbox.pack_start(button, True, True, 0)
-        button.set_flags(gtk.CAN_DEFAULT)
-        button.grab_default()
-        button.show()
-
-        window.show()
-
-    def escape(self, widget, event):
-        if gtk.gdk.keyval_name(event.keyval) == "Escape":
-            #gtk.main_quit()
-            #return False
-            sys.exit(2)
-
-    def myCallback(self, widget, entry, window, passwd):
-        passwd[0] = entry.get_text()
-        window.destroy()
-        gtk.main_quit()
+            if self.zbxtext_mode:
+                print "Zabbix URL:", self.zbxurl
+                print "Zabbix user:", self.zbxuser
+                self.zbxpasswd = getpass.getpass(prompt="password: ")
+            else:
+                print self.zbxtext_mode
+                md = MyDialog()
+                mypass = [""]
+                md.getPasswd(mypass, self.zbxurl)
+                gtk.main()
+                self.zbxpasswd = mypass[0]
 
 
 class GtkMessages:
@@ -432,6 +413,7 @@ def main(argv):
 
     dc = DataContainer(argv[0])
     print dc.script_name + ":", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), "on", dc.zbxhost, command
+    print dc.zbxuser, dc.zbxpasswd
 
     zbx = MyZbx()
     quit()
