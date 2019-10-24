@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#!/usr/bin/python -W ignore
 
 from socket import *
 from pyzabbix import *
@@ -49,18 +48,15 @@ class Globals:
         self.zbxlog = self.tmp_dir + "/" + self.zbxhost + ".log"
 
         self.defaults = {
-                        "icon": self.zbxhost,
-                        "interval": 60 * 1000,
+                        "interval": 30 * 1000,
                         "notify": True,
                         "port": 10051,
                         "text_mode": True,
+                        "ignore_warn": False,
+                        "icon": self.zbxhost,
                         "wav": None,
                         "waw_player": "/usr/bin/mpv"
                         }
-        try:
-            self.zbxicon = self.script_dir + "/icons/" + self.config.get("zbxOptions", "icon")
-        except:
-            self.zbxicon = self.script_dir + "/icons/" + self.defaults["icon"]
         try:
             self.zbxinterval = int(self.config.get("zbxOptions", "interval")) * 1000
         except:
@@ -68,15 +64,26 @@ class Globals:
         try:
             self.zbxnotify = bool(self.config.get("zbxOptions", "notify"))
         except:
-            self.zbxinterval = self.defaults["notify"]
+            self.zbxnotify = self.defaults["notify"]
         try:
             self.zbxport = int(self.config.get("zbxOptions", "port"))
         except:
             self.zbxport = self.defaults["port"]
+
         try:
             self.zbxtext_mode = bool(self.config.get("zbxOptions", "text_mode"))
         except:
             self.zbxtext_mode = self.defaults["text_mode"]
+
+        try:
+            self.zbxignore_warn = bool(self.config.get("zbxOptions", "ignore_warn"))
+        except:
+            self.zbxignore_warn = self.defaults["ignore_warn"]
+
+        try:
+            self.zbxicon = self.script_dir + "/icons/" + self.config.get("zbxOptions", "icon")
+        except:
+            self.zbxicon = self.script_dir + "/icons/" + self.defaults["icon"]
         try:
             self.zbxwav_player = self.config.get("zbxOptions", "wav_player")
         except:
@@ -114,7 +121,6 @@ class TrayTxt:
         self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())) + " ")
         self.flog.write(globals.zbx_status + "\n")
         self.flog.flush()
-        # globals.script_name + ":", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), "on", globals.zbxhost, command
 
     def check(self):
         zbx.status()
@@ -210,7 +216,6 @@ class TrayIcon:
                     n.set_urgency(2)
                     n.timeout = -1
                 n.show()
-            # if globals.play_wav:
             if globals.zbxwav is not None:
                 try:
                     f = open('/dev/null', 'w')
@@ -235,7 +240,8 @@ class MyZbx:
     def __init__(self):
         self.zapi = ZabbixAPI(globals.zbxurl, timeout=5)
         self.zapi.session.verify = False
-        warnings.filterwarnings("ignore")
+        if globals.zbxignore_warn:
+            warnings.filterwarnings("ignore")
         self.login()
 
     def pingit(self):
