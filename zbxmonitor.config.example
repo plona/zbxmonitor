@@ -1,18 +1,25 @@
-[zbxOptions]
+[zbxCredenials]
+user = user
+passwd = password
+host = host.example.com
+url = https://host.example.com/zabbix
 
+[zbxOptions]
 ; icon file [ico-ok.png|ico-err.png]
 icon = icon
 
 ; pooling interval
 interval = 10
 
-; notify-send
+; notify-send or empty
+; notify =
 notify = True
 
 ; port
 port = 10051
 
-; text_mode
+; text_mode or empty
+; text_mode =
 text_mode = True
 
 wav_player = /usr/bin/mpv

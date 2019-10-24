@@ -27,10 +27,9 @@ class Globals:
         self.script_short_name = os.path.splitext(self.script_full_path)[0]
 
         self.config_file = self.script_short_name + ".config"
-        self.credentials_file = self.script_short_name + ".credentials"
         self.config = ConfigParser.ConfigParser()
 
-        self.config.read(self.credentials_file)
+        self.config.read(self.config_file)
         self.zbxhost = self.config.get("zbxCredentials", "host")
         self.zbxuser = self.config.get("zbxCredentials", "user")
         try:
@@ -58,7 +57,7 @@ class Globals:
                         "wav": None,
                         "waw_player": "/usr/bin/mpv"
                         }
-        self.config.read(self.config_file)
+        # self.config.read(self.config_file)
 
         try:
             self.zbxicon = self.script_dir + "/icons/" + self.config.get("zbxOptions", "icon")
@@ -387,9 +386,10 @@ def main(argv):
 
     f = globals.tmp_dir + "/" + globals.script_name + "." + globals.zbxhost
     pidfile = f + ".pid"
-    stdoutfile = f  + ".out"
-    stderrfile = f + ".log"
-    daemon = myDaemon(pidfile, stderr=stderrfile, stdout=stdoutfile)
+    # stdoutfile = f  + ".out"
+    # stderrfile = f + ".log"
+    # daemon = myDaemon(pidfile, stderr=stderrfile, stdout=stdoutfile)
+    daemon = myDaemon(pidfile)
     if 'start' == command:
         daemon.start(globals.script_name, globals.zbxhost)
     elif 'stop' == command:

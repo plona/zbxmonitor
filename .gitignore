@@ -1,5 +1,7 @@
 .idea/*
 tmp/*
+icons/*
+sounds/*
 *.swp
 *.pyc
 *.credentials
