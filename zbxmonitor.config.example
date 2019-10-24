@@ -1,0 +1,21 @@
+[zbxOptions]
+
+; icon file [ico-ok.png|ico-err.png]
+icon = icon
+
+; pooling interval
+interval = 10
+
+; notify-send
+notify = True
+
+; port
+port = 10051
+
+; text_mode
+text_mode = True
+
+wav_player = /usr/bin/mpv
+
+; [wav-ok.wav | wav-err.wav]
+wav = sound

@@ -61,9 +61,9 @@ class Globals:
         self.config.read(self.config_file)
 
         try:
-            self.zbxicon = self.script_dir + "/" + self.config.get("zbxOptions", "icon")
+            self.zbxicon = self.script_dir + "/icons/" + self.config.get("zbxOptions", "icon")
         except:
-            self.zbxicon = self.script_dir + "/" + self.defaults["icon"]
+            self.zbxicon = self.script_dir + "/icons/" + self.defaults["icon"]
         try:
             self.zbxinterval = int(self.config.get("zbxOptions", "interval")) * 1000
         except:
@@ -85,7 +85,7 @@ class Globals:
         except:
             self.zbxwav_player = self.defaults["wav_player"]
         try:
-            self.zbxwav = self.config.get("zbxOptions", "wav")
+            self.zbxwav = self.script_dir + "/sounds/" + self.config.get("zbxOptions", "wav")
         except:
             self.zbxwav = self.defaults["wav"]
 
@@ -113,9 +113,9 @@ class TrayTxt:
         self.flog = open(globals.zbxlog, "a")
         self.flog.write("\n" + globals.script_name + ": ")
         self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
-        self.flog.write(" on " + globals.zbxhost + " " + command + "\n")
+        self.flog.write(" on " + globals.zbxhost + " " + command + "\n\n")
         self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())) + " ")
-        self.flog.write(globals.zbx_status)
+        self.flog.write(globals.zbx_status + "\n")
         self.flog.flush()
         # globals.script_name + ":", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), "on", globals.zbxhost, command
 
@@ -125,7 +125,7 @@ class TrayTxt:
         if globals.zbx_status != globals.zbx_last_status:
             globals.zbx_last_status = globals.zbx_status
             self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())) + " ")
-            self.flog.write(globals.zbx_status)
+            self.flog.write(globals.zbx_status + "\n")
             self.flog.flush()
         return globals.zbx_status
 
