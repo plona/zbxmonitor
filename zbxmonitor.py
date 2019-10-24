@@ -50,8 +50,8 @@ from subprocess import call
 from daemon import Daemon
 import time
 import os
-import sys
-import getopt
+# import sys
+# import getopt
 import getpass
 import gobject
 import notify2
@@ -69,8 +69,6 @@ class DataContainer:
 
         self.config_file = self.script_short_name + ".config"
         self.credentials_file = self.script_short_name + ".credentials"
-        # print self.config_file
-        # print self.credentials_file
         self.config = ConfigParser.ConfigParser()
 
         self.config.read(self.credentials_file)
@@ -85,9 +83,16 @@ class DataContainer:
         except:
             self.zbxurl = "https://" + self.zbxhost + "/zabbix"
 
+        self.tmp_dir = self.script_dir + "/" + "tmp"
+        try:
+            os.mkdir(self.tmp_dir)
+        except:
+            pass
+        self.zbxlog = self.tmp_dir + "/" + self.zbxhost + ".log"
+
         self.defaults = {
                         "icon": self.zbxhost,
-                        "interval": 60,
+                        "interval": 60 * 1000,
                         "notify": True,
                         "port": 10051,
                         "text_mode": True,
@@ -96,26 +101,18 @@ class DataContainer:
                         }
         self.config.read(self.config_file)
 
-        # self.zbxicon = self.config.get("zbxOptions", "icon")
-        # self.zbxinterval = int(self.config.get("zbxOptions", "interval"))
-        # self.zbxnotify = bool(self.config.get("zbxOptions", "notify"))
-        # self.zbxport = int(self.config.get("zbxOptions", "port"))
-        # self.zbxtext_mode = bool(self.config.get("zbxOptions", "text_mode"))
-        # self.zbxwav_player = self.config.get("zbxOptions", "wav_player")
-        # self.zbxwav = self.config.get("zbxOptions", "wav")
-
         try:
-            self.zbxicon = self.config.get("zbxOptions", "icon")
+            self.zbxicon = self.script_dir + "/" + self.config.get("zbxOptions", "icon")
         except:
-            self.zbxicon = self.defaults["icon"]
+            self.zbxicon = self.script_dir + "/" + self.defaults["icon"]
         try:
-            self.zbxinterval = int(self.config.get("zbxOptions", "interval"))
+            self.zbxinterval = int(self.config.get("zbxOptions", "interval")) * 1000
         except:
             self.zbxinterval = self.defaults["interval"]
         try:
             self.zbxnotify = bool(self.config.get("zbxOptions", "notify"))
         except:
-            self.zbxinterval = self.defaults["interval"]
+            self.zbxinterval = self.defaults["notify"]
         try:
             self.zbxport = int(self.config.get("zbxOptions", "port"))
         except:
@@ -133,21 +130,6 @@ class DataContainer:
         except:
             self.zbxwav = self.defaults["wav"]
 
-        print "-----------------"
-        print "passwd", self.zbxpasswd
-        print "user", self.zbxuser
-        print "host", self.zbxhost
-        print "url", self.zbxurl
-        print
-        print "icon", self.zbxicon
-        print "interval", self.zbxinterval
-        print "notify", self.zbxnotify
-        print "port", self.zbxport
-        print "text_mode", self.zbxtext_mode
-        print "wav_player", self.zbxwav_player
-        print "wav", self.zbxwav
-        print "-----------------"
-
         self.zbx_ver = ''
         self.zbx_ping = 'ok'
         self.zbx_connected = 'ok'  # ok, port_is_down, not_logged, err_getting_data_1, err_getting_data_2
@@ -159,7 +141,6 @@ class DataContainer:
                 print "Zabbix user:", self.zbxuser
                 self.zbxpasswd = getpass.getpass(prompt="password: ")
             else:
-                print self.zbxtext_mode
                 md = MyDialog()
                 mypass = [""]
                 md.getPasswd(mypass, self.zbxurl)
@@ -174,9 +155,10 @@ class GtkMessages:
         self.statusIcon.connect('popup-menu', self.on_right_click)
         zbx.status()
         if dc.zbx_status != "ok":
-            self.set_icon(dc.icon_err)
+            # self.set_icon(dc.icon_err)
+            self.set_icon(dc.zbxicon + "-err.png")
         else:
-            self.set_icon(dc.icon_ok)
+            self.set_icon(dc.zbxicon + "-ok.png")
 
     def set_icon(self, icon_file):
         self.statusIcon.set_from_file(icon_file)
@@ -189,13 +171,13 @@ class GtkMessages:
 
     def make_menu(self, event_button, event_time, data=None):
         menu = gtk.Menu()
-        reconnect_item = gtk.MenuItem("Reconnect to " + dc.zbx_server)
-        close_item = gtk.MenuItem("Close applet " + dc.zbx_server)
+        reconnect_item = gtk.MenuItem("Reconnect to " + dc.zbxhost)
+        close_item = gtk.MenuItem("Close applet " + dc.zbxhost)
 
         if dc.zbx_connected != 'ok' and dc.zbx_ping == 'ok':
             menu.append(reconnect_item)
             # add callback
-            reconnect_item.connect_object("activate", self.reconnect_to_zbx_server, "reconnect to zbx server")
+            reconnect_item.connect_object("activate", self.reconnect_to_zbxhost, "reconnect to zbx server")
             reconnect_item.show()
 
         menu.append(close_item)
@@ -209,23 +191,41 @@ class GtkMessages:
     def show_current_stat(self, event):
         zbx.status()
         if dc.zbx_status != "ok":
-            self.set_icon(dc.icon_err)
+            self.set_icon(dc.zbxicon + "-err.png")
         else:
-            self.set_icon(dc.icon_ok)
-        self.message(dc.zbx_server + " current status is:\n\n" + dc.zbx_status)
+            self.set_icon(dc.zbxicon + "-ok.png")
+        self.message(dc.zbxhost + " current status is:\n\n" + dc.zbx_status)
 
     def on_right_click(self, data, event_button, event_time):
         self.make_menu(event_button, event_time)
 
-    def reconnect_to_zbx_server(self, data=None):
+    def reconnect_to_zbxhost(self, data=None):
         zbx.login()
-        self.message('Logging to ' + dc.zbx_server + ":\n" + dc.zbx_connected)
+        self.message('Logging to ' + dc.zbxhost + ":\n" + dc.zbx_connected)
 
     def close_app(self, data=None):
-        syslog.syslog(dc.zbx_server + ": disconnected.")
+        syslog.syslog(dc.zbxhost + ": disconnected.")
         gtk.main_quit()
         # if self.message(data, gtk.BUTTONS_OK_CANCEL) == gtk.RESPONSE_OK:
         #     gtk.main_quit()
+
+
+class TrayTxt:
+    def __init__(self):
+        # self.fh = fh
+        self.flog = open(dc.zbxlog, "w")
+
+    def check(self):
+        zbx.status()
+        syslog.syslog(dc.zbxhost + " status (txt): " + dc.zbx_status)
+        if dc.zbx_status != dc.zbx_last_status:
+            dc.zbx_last_status = dc.zbx_status
+            self.flog.write(dc.zbx_status)
+            self.flog.flush()
+        return dc.zbx_status
+
+    def tray(self):
+        gobject.timeout_add(dc.zbxinterval, self.check)
 
 
 class TrayIcon:
@@ -235,34 +235,35 @@ class TrayIcon:
 
     def check(self):
         zbx.status()
-        syslog.syslog(dc.zbx_server + " status: " + dc.zbx_status)
+        syslog.syslog(dc.zbxhost + " status (GUI): " + dc.zbx_status)
         if dc.zbx_status != dc.zbx_last_status:
             dc.zbx_last_status = dc.zbx_status
-            if dc.zbx_notify:
-                n = notify2.Notification("Zabbix: " + dc.zbx_server, dc.zbx_status)
+            if dc.zbxnotify:
+                n = notify2.Notification("Zabbix: " + dc.zbxhost, dc.zbx_status)
                 if dc.zbx_status == "ok":
                     n.set_urgency(1)
                 else:
                     n.set_urgency(2)
                     n.timeout = -1
                 n.show()
-            if dc.play_wav:
+            # if dc.play_wav:
+            if dc.zbxwav is not None:
                 try:
                     f = open('/dev/null', 'w')
                     if dc.zbx_status == 'ok':
-                        call([dc.wav_player, dc.wav_ok], stdout=f, stderr=f)
+                        call([dc.zbxwav_player, dc.zbxwav + "-ok.wav"], stdout=f, stderr=f)
                     else:
-                        call([dc.wav_player, dc.wav_err], stdout=f, stderr=f)
+                        call([dc.zbxwav_player, dc.zbxwav + "-err.wav"], stdout=f, stderr=f)
                 except:
                     pass
         if dc.zbx_status == 'ok':
-            self.__gmsg.set_icon(dc.icon_ok)
+            self.__gmsg.set_icon(dc.zbxicon + "-ok.png")
         else:
-            self.__gmsg.set_icon(dc.icon_err)
+            self.__gmsg.set_icon(dc.zbxicon + "-err.png")
         return True
 
     def tray(self):
-        gobject.timeout_add(dc.zbx_sleep, self.check)
+        gobject.timeout_add(dc.zbxinterval, self.check)
         gtk.main()
 
 
@@ -388,7 +389,7 @@ class MyZbx:
 
 class myDaemon(Daemon):
     def run(self):
-        syslog.openlog(script_name, syslog.LOG_PID | syslog.LOG_NDELAY, syslog.LOG_DAEMON)
+        syslog.openlog(dc.script_name, syslog.LOG_PID | syslog.LOG_NDELAY, syslog.LOG_DAEMON)
         tc.tray()
 
 
@@ -413,17 +414,23 @@ def main(argv):
 
     dc = DataContainer(argv[0])
     print dc.script_name + ":", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), "on", dc.zbxhost, command
-    print dc.zbxuser, dc.zbxpasswd
 
     zbx = MyZbx()
-    quit()
-    tc = TrayIcon()
+    if (dc.zbxtext_mode):
+        # flog = open(dc.zbxlog, "w")
+        # tc = TrayTxt(flog)
+        tc = TrayTxt()
+    else:
+        tc = TrayIcon()
+    # quit()
 
-    daemon = myDaemon("/tmp/" + dc.script_name + "." + host + ".pid")
+    pidfile = "/tmp/" + dc.script_name + "." + dc.zbxhost + ".pid"
+    # daemon = myDaemon("/tmp/" + dc.script_name + "." + dc.zbxhost + ".pid")
+    daemon = myDaemon(pidfile, stderr="/tmp/stdout", stdout="/tmp/stdout")
     if 'start' == command:
-        daemon.start(script_name, host)
+        daemon.start(dc.script_name, dc.zbxhost)
     elif 'stop' == command:
-        daemon.stop(host)
+        daemon.stop(dc.zbxhost)
     else:
         print "Unknown command"
         sys.exit(2)
