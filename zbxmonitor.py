@@ -57,8 +57,6 @@ class Globals:
                         "wav": None,
                         "waw_player": "/usr/bin/mpv"
                         }
-        # self.config.read(self.config_file)
-
         try:
             self.zbxicon = self.script_dir + "/icons/" + self.config.get("zbxOptions", "icon")
         except:
@@ -384,7 +382,7 @@ def main(argv):
     else:
         tc = TrayIcon()
 
-    f = globals.tmp_dir + "/" + globals.script_name + "." + globals.zbxhost
+    f = globals.tmp_dir + "/" + globals.zbxhost
     pidfile = f + ".pid"
     # stdoutfile = f  + ".out"
     # stderrfile = f + ".log"
