@@ -30,3 +30,6 @@ Section `zbxCredenials` is described in `zbxmonitor.config.example`. Section `zb
 - ackOnly - default: True. Only unacknowledged messages will be shown. If empty monitor will show all (acknowledged and unacknowledged) messages.
 
 #### Filtering messages
+- exclTg - default: empty list. If not empty `inclTg` is ignored. Example:<br>
+`exclTg = [ "SSL certificate", "Free disk space" ]` - all messages contains string in list will be suppressed
+- inclTg - default: empty list. Valid only if `exclTg` is empty. Example:
