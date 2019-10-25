@@ -15,6 +15,7 @@ import notify2
 import syslog
 import ConfigParser
 import warnings
+import ast
 from dialog_nix import *
 
 
@@ -51,11 +52,13 @@ class Globals:
                         "interval": 30 * 1000,
                         "notify": True,
                         "port": 10051,
-                        "text_mode": True,
+                        "text_mode": False,
                         "ignore_warn": False,
                         "icon": self.zbxhost,
                         "wav": None,
-                        "waw_player": "/usr/bin/mpv"
+                        "waw_player": "/usr/bin/mpv",
+                        "exclTg": [],
+                        "inclTg": []
                         }
         try:
             self.zbxinterval = int(self.config.get("zbxOptions", "interval")) * 1000
@@ -69,17 +72,14 @@ class Globals:
             self.zbxport = int(self.config.get("zbxOptions", "port"))
         except:
             self.zbxport = self.defaults["port"]
-
         try:
             self.zbxtext_mode = bool(self.config.get("zbxOptions", "text_mode"))
         except:
             self.zbxtext_mode = self.defaults["text_mode"]
-
         try:
             self.zbxignore_warn = bool(self.config.get("zbxOptions", "ignore_warn"))
         except:
             self.zbxignore_warn = self.defaults["ignore_warn"]
-
         try:
             self.zbxicon = self.script_dir + "/icons/" + self.config.get("zbxOptions", "icon")
         except:
@@ -92,6 +92,20 @@ class Globals:
             self.zbxwav = self.script_dir + "/sounds/" + self.config.get("zbxOptions", "wav")
         except:
             self.zbxwav = self.defaults["wav"]
+
+        try:
+            self.zbxeclTg = ast.literal_eval(self.config.get("zbxExlcTriggers", "exclTg"))
+        except:
+            self.zbxeclTg = self.defaults["exclTg"]
+
+        if len(self.zbxeclTg) == 0:
+            try:
+                self.zbxinclTg = ast.literal_eval(self.config.get("zbxInlcTriggers", "inclTg"))
+            except:
+                self.zbxinclTg = self.defaults["inclTg"]
+        else:
+            self.zbxinclTg = self.defaults["inclTg"]
+
 
         self.zbx_ver = ''
         self.zbx_ping = 'ok'
@@ -177,7 +191,7 @@ class GtkMessages:
         menu.popup(None, None, None, event_button, event_time)
 
     def show_current_stat(self, event):
-        zbx.status()
+        zbx.status("all")
         if globals.zbx_status != "ok":
             self.set_icon(globals.zbxicon + "-err.png")
         else:
@@ -204,7 +218,7 @@ class TrayIcon:
         notify2.init("zab_mon")
 
     def check(self):
-        zbx.status()
+        zbx.status("filtered")
         syslog.syslog(globals.zbxhost + " status (GUI): " + globals.zbx_status)
         if globals.zbx_status != globals.zbx_last_status:
             globals.zbx_last_status = globals.zbx_status
@@ -267,7 +281,7 @@ class MyZbx:
             finally:
                 print "Connect: " + globals.zbx_connected
 
-    def status(self):
+    def status(self, mode="all"):
         self.pingit()
         if globals.zbx_ping != 'ok':
             globals.zbx_status = globals.zbx_ping
@@ -275,10 +289,10 @@ class MyZbx:
         if globals.zbx_connected == 'not logged in':
             globals.zbx_status = globals.zbx_connected
             return globals.zbx_status
-        globals.zbx_status = self.get_triggers(globals.zbx_ver)
+        globals.zbx_status = self.get_triggers(globals.zbx_ver, mode)
         return globals.zbx_status
 
-    def get_triggers(self, zbx_ver):
+    def get_triggers(self, zbx_ver, mode="all"):
         try:
             if zbx_ver == "2":
                 # Get a list of all issues (AKA tripped triggers)
@@ -345,6 +359,10 @@ class MyZbx:
                          )
         elif zbx_ver == "3" or zbx_ver == "4":
             for t in triggers:
+                if mode == "filtered":
+                    if len(globals.zbxeclTg > 0):
+                        pass
+                    elif len
                 if int(t['value']) == 1 and t['unacknowledged']:
                     rval += ("{0} - {1} {2}".format(t['hosts'][0]['host'],
                                                     t['description'],
