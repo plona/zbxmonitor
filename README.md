@@ -27,3 +27,6 @@ Section `zbxCredenials` is described in `zbxmonitor.config.example`. Section `zb
 - notify - default: True. Messages will be send to notification daemon (eg. `dunst`). If empty you will be not notified, but status will be still enabled by left or right click on script icon.
 - ignore_warn - default: False. True - SSL warnings will be suppressed (when connecting to Zabbix Server via https)
 - text_mode - default: False. If True (or not empty) zbxmonitor will work in text mode only. It is rather for testing purpose.
+- ackOnly - default: True. Only unacknowledged messages will be shown. If empty monitor will show all (acknowledged and unacknowledged) messages.
+
+#### Filtering messages
