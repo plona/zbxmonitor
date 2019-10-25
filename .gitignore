@@ -6,3 +6,4 @@ sounds/*
 *.pyc
 *.credentials
 *.config
+*.run
