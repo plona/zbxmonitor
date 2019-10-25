@@ -19,3 +19,5 @@ Config file must be named as \<script\>.config, eg. `zbxmonitor.py` uses `zbxmon
 Path to icons and sounds are relative to ./icons and ./sounds dirs.
 
 Section `zbxCredenials` is described in `zbxmonitor.config.example`. Section `zbxOptions` description:
+- icon - default: host in `zbxCredenials`. You must have two files in ./icon dir: `host.example.com-ok.png` and `host.example.com-err.png` in this example.
+- wav - default: None. 
