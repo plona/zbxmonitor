@@ -7,8 +7,6 @@ from subprocess import call
 from daemon import Daemon
 import time
 import os
-# import sys
-# import getopt
 import getpass
 import gobject
 import notify2
@@ -56,7 +54,7 @@ class Globs:
                         "ignore_warn": False,
                         "icon": self.zbxhost,
                         "wav": None,
-                        "waw_player": "/usr/bin/mpv",
+                        "wav_player": "/usr/bin/mpv",
                         "ackOnly": True,
                         "exclTg": [],
                         "inclTg": []
@@ -93,25 +91,21 @@ class Globs:
             self.zbxwav = self.script_dir + "/sounds/" + self.config.get("zbxOptions", "wav")
         except:
             self.zbxwav = self.defaults["wav"]
-
         try:
             self.zbxackOnly = bool(self.config.get("zbxOptions", "ackOnly"))
         except:
             self.zbxackOnly = self.defaults["ackOnly"]
-
         try:
-            self.zbxExclTg = ast.literal_eval(self.config.get("zbxExlcTriggers", "exclTg"))
+            self.zbxExclTg = ast.literal_eval(self.config.get("zbxOptions", "exclTg"))
         except:
             self.zbxExclTg = self.defaults["exclTg"]
-
         if len(self.zbxExclTg) == 0:
             try:
-                self.zbxInclTg = ast.literal_eval(self.config.get("zbxInlcTriggers", "inclTg"))
+                self.zbxInclTg = ast.literal_eval(self.config.get("zbxOptions", "inclTg"))
             except:
                 self.zbxInclTg = self.defaults["inclTg"]
         else:
             self.zbxInclTg = self.defaults["inclTg"]
-
 
         self.zbx_ping = 'ok'
         self.zbx_connected = 'ok'  # ok, port_is_down, not_logged, err_getting_data_1, err_getting_data_2
@@ -185,7 +179,6 @@ class GtkMessages:
 
         if globs.zbx_connected != 'ok' and globs.zbx_ping == 'ok':
             menu.append(reconnect_item)
-            # add callback
             reconnect_item.connect_object("activate", self.reconnect_to_zbxhost, "reconnect to zbx server")
             reconnect_item.show()
 
@@ -194,15 +187,13 @@ class GtkMessages:
         close_item.connect_object("activate", self.close_app, "Really close?")
         close_item.show()
 
-        menu.append(show_unfiltered_item)
-        # add callback
-        show_unfiltered_item.connect_object("activate", self.show_unfiltered_triggers, "show unfiltered triggers")
-        show_unfiltered_item.show()
-
-        menu.append(show_all_item)
-        # add callback
-        show_all_item.connect_object("activate", self.show_all_triggers, "show all triggers")
-        show_all_item.show()
+        if globs.zbx_connected == 'ok':
+            menu.append(show_all_item)
+            show_all_item.connect_object("activate", self.show_all_triggers, "show all triggers")
+            show_all_item.show()
+            menu.append(show_unfiltered_item)
+            show_unfiltered_item.connect_object("activate", self.show_unfiltered_triggers, "show unfiltered triggers")
+            show_unfiltered_item.show()
 
         # Popup the menu
         menu.popup(None, None, None, event_button, event_time)
@@ -213,7 +204,7 @@ class GtkMessages:
             self.set_icon(globs.zbxicon + "-err.png")
         else:
             self.set_icon(globs.zbxicon + "-ok.png")
-        self.message(globs.zbxhost + " current status is:\n\n" + globs.zbx_status)
+        self.message(globs.zbxhost + " filtered triggers:\n\n" + globs.zbx_status)
 
     def on_right_click(self, data, event_button, event_time):
         self.make_menu(event_button, event_time)
@@ -224,11 +215,11 @@ class GtkMessages:
 
     def show_unfiltered_triggers(self, data=None):
         zbx.status("unfiltered")
-        self.message(globs.zbxhost + " current status is:\n\n" + globs.zbx_status)
+        self.message(globs.zbxhost + " unfiltered triggers:\n\n" + globs.zbx_status)
 
     def show_all_triggers(self, data=None):
         zbx.status("all")
-        self.message(globs.zbxhost + " current status is:\n\n" + globs.zbx_status)
+        self.message(globs.zbxhost + " all triggers:\n\n" + globs.zbx_status)
 
     def close_app(self, data=None):
         syslog.syslog(globs.zbxhost + ": disconnected.")
@@ -317,14 +308,16 @@ class MyZbx:
         return globs.zbx_status
 
     def add_to_rval(self, t, rval, extmode=False):
-        if int(t["value"]):
+        if int(t["value"]) == 1:
             if extmode:
-                pass
-            elif t["unacknowledged"]:
-                pass
-        if int(t['value']) == 1 and t['unacknowledged'] or not globs.zbxackOnly:
-        # if int(t['value']) == 1 and t['unacknowledged']:
-            rval[0] += ("{0} - {1} {2}".format(t['hosts'][0]['host'], t['description'], '(Unack)' if t['unacknowledged'] else '') + "\n\n")
+                rval[0] += ("{0} - {1} {2}".format(t['hosts'][0]['host'], t['description'], '(Unack)' if t['unacknowledged'] else '') + "\n\n")
+                return
+            if globs.zbxackOnly:
+                if t['unacknowledged']:
+                    rval[0] += ("{0} - {1} {2}".format(t['hosts'][0]['host'], t['description'], '(Unack)' if t['unacknowledged'] else '') + "\n\n")
+            else:
+                rval[0] += ("{0} - {1} {2}".format(t['hosts'][0]['host'], t['description'], '(Unack)' if t['unacknowledged'] else '') + "\n\n")
+        return
 
     def get_triggers(self, mode="all"):
         try:
@@ -360,20 +353,19 @@ class MyZbx:
         # Print a list containing only "tripped" triggers
         triggers.sort()
         rval = ['']
-        print mode
         for t in triggers:
-            print "description/ack:", t['description'], "|", t['unacknowledged']
+            # print "description/ack:", t['description'], "|", t['unacknowledged']
             if mode == "filtered":
                 if len(globs.zbxExclTg) > 0:
                     for flt in globs.zbxExclTg:
-                        print "flt/description/ack:", flt, "|", t['description'], "|", t['unacknowledged']
+                        # print "flt/description/ack:", flt, "|", t['description'], "|", t['unacknowledged']
                         if flt in t['description']:
                             continue
                         else:
                             self.add_to_rval(t, rval)
                 elif len(globs.zbxInclTg) > 0:
                     for flt in globs.zbxInclTg:
-                        print "flt/description/ack:", flt, "|", t['description'], "|", t['unacknowledged']
+                        # print "flt/description/ack:", flt, "|", t['description'], "|", t['unacknowledged']
                         if flt in t['description']:
                             self.add_to_rval(t, rval)
                         else:
@@ -385,7 +377,7 @@ class MyZbx:
             elif mode == "all":
                 self.add_to_rval(t, rval, True)
             else:
-                self.add_to_rval(t, rval)
+                return "Unknown mode: " + mode
 
         if rval[0] == '':
             return 'ok'
@@ -401,7 +393,6 @@ class myDaemon(Daemon):
 
 def main(argv):
     global globs, zbx, tc
-    # command - argv[1] (start if no args)
 
     if len(argv) == 1:
         command = "start"
@@ -417,18 +408,19 @@ def main(argv):
     globs = Globs(argv[0])
     print globs.script_name + ":", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), "on", globs.zbxhost, command
 
-    zbx = MyZbx()
-    if (globs.zbxtext_mode):
-        tc = TrayTxt(command)
-    else:
-        tc = TrayIcon()
+    if "start" == command:
+        zbx = MyZbx()
+        if (globs.zbxtext_mode):
+            tc = TrayTxt(command)
+        else:
+            tc = TrayIcon()
 
     f = globs.tmp_dir + "/" + globs.zbxhost
     pidfile = f + ".pid"
-    stdoutfile = f  + ".out"
-    stderrfile = f + ".log"
-    daemon = myDaemon(pidfile, stderr=stderrfile, stdout=stdoutfile)
-    # daemon = myDaemon(pidfile)
+    # stdoutfile = f  + ".out"
+    # stderrfile = f + ".log"
+    # daemon = myDaemon(pidfile, stderr=stderrfile, stdout=stdoutfile)
+    daemon = myDaemon(pidfile)
     if 'start' == command:
         daemon.start(globs.script_name, globs.zbxhost)
     elif 'stop' == command:
