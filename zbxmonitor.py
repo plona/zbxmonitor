@@ -57,7 +57,7 @@ class Globs:
                         "icon": self.zbxhost,
                         "wav": None,
                         "waw_player": "/usr/bin/mpv",
-                        "unack": True,
+                        "ackOnly": True,
                         "exclTg": [],
                         "inclTg": []
                         }
@@ -95,9 +95,9 @@ class Globs:
             self.zbxwav = self.defaults["wav"]
 
         try:
-            self.zbxunack = bool(self.config.get("zbxOptions", "unack"))
+            self.zbxackOnly = bool(self.config.get("zbxOptions", "ackOnly"))
         except:
-            self.zbxunack = self.defaults["unack"]
+            self.zbxackOnly = self.defaults["ackOnly"]
 
         try:
             self.zbxExclTg = ast.literal_eval(self.config.get("zbxExlcTriggers", "exclTg"))
@@ -180,6 +180,7 @@ class GtkMessages:
         menu = gtk.Menu()
         reconnect_item = gtk.MenuItem("Reconnect to " + globs.zbxhost)
         close_item = gtk.MenuItem("Close applet " + globs.zbxhost)
+        show_unfiltered_item = gtk.MenuItem("Show unfiltered triggers " + globs.zbxhost)
         show_all_item = gtk.MenuItem("Show all triggers " + globs.zbxhost)
 
         if globs.zbx_connected != 'ok' and globs.zbx_ping == 'ok':
@@ -192,6 +193,11 @@ class GtkMessages:
         # add callback
         close_item.connect_object("activate", self.close_app, "Really close?")
         close_item.show()
+
+        menu.append(show_unfiltered_item)
+        # add callback
+        show_unfiltered_item.connect_object("activate", self.show_unfiltered_triggers, "show unfiltered triggers")
+        show_unfiltered_item.show()
 
         menu.append(show_all_item)
         # add callback
@@ -215,6 +221,10 @@ class GtkMessages:
     def reconnect_to_zbxhost(self, data=None):
         zbx.login()
         self.message('Logging to ' + globs.zbxhost + ":\n" + globs.zbx_connected)
+
+    def show_unfiltered_triggers(self, data=None):
+        zbx.status("unfiltered")
+        self.message(globs.zbxhost + " current status is:\n\n" + globs.zbx_status)
 
     def show_all_triggers(self, data=None):
         zbx.status("all")
@@ -306,8 +316,14 @@ class MyZbx:
         globs.zbx_status = self.get_triggers(mode)
         return globs.zbx_status
 
-    def add_to_rval(self, t, rval):
-        if int(t['value']) == 1 and t['unacknowledged'] or not globs.zbxunack:
+    def add_to_rval(self, t, rval, extmode=False):
+        if int(t["value"]):
+            if extmode:
+                pass
+            elif t["unacknowledged"]:
+                pass
+        if int(t['value']) == 1 and t['unacknowledged'] or not globs.zbxackOnly:
+        # if int(t['value']) == 1 and t['unacknowledged']:
             rval[0] += ("{0} - {1} {2}".format(t['hosts'][0]['host'], t['description'], '(Unack)' if t['unacknowledged'] else '') + "\n\n")
 
     def get_triggers(self, mode="all"):
@@ -344,22 +360,30 @@ class MyZbx:
         # Print a list containing only "tripped" triggers
         triggers.sort()
         rval = ['']
+        print mode
         for t in triggers:
+            print "description/ack:", t['description'], "|", t['unacknowledged']
             if mode == "filtered":
                 if len(globs.zbxExclTg) > 0:
                     for flt in globs.zbxExclTg:
-                        # print "flt/description/ack:", flt, "|", t['description'], "|", t['unacknowledged']
+                        print "flt/description/ack:", flt, "|", t['description'], "|", t['unacknowledged']
                         if flt in t['description']:
                             continue
                         else:
                             self.add_to_rval(t, rval)
                 elif len(globs.zbxInclTg) > 0:
                     for flt in globs.zbxInclTg:
-                        # print "flt/description/ack:", flt, "|", t['description'], "|", t['unacknowledged']
+                        print "flt/description/ack:", flt, "|", t['description'], "|", t['unacknowledged']
                         if flt in t['description']:
                             self.add_to_rval(t, rval)
                         else:
                             continue
+                else:
+                    self.add_to_rval(t, rval)
+            elif mode == "unfiltered":
+                self.add_to_rval(t, rval)
+            elif mode == "all":
+                self.add_to_rval(t, rval, True)
             else:
                 self.add_to_rval(t, rval)
 
