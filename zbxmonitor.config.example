@@ -9,7 +9,7 @@ host = host.example.com
 url = https://host.example.com/zabbix
 
 [zbxOptions]
-; all opions in this section are optional. Dafaults:
+; all opions in this section are optional. Defaults:
 ; interval = 30[s]
 ; notify = True
 ; port = 10051
