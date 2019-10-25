@@ -37,3 +37,10 @@ Section `zbxCredenials` is described in `zbxmonitor.config.example`. Section `zb
 
 ### Icon in tray
 - left click shows current filtered (if any) status of Zabbix Server.
+- right click brings popup:
+    - Close applet
+    - Show all (acknowledged and unacknowledged) messages
+    - Show unfiltered and unacknowledged messages
+
+## To do
+Windows port :-(
