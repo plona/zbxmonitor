@@ -15,7 +15,7 @@ and launch this symlink. You can run multiple instances of monitor on multiple Z
 All packages listed in `import` \*.py. Pyzabbix has been installed with `pip`.
 
 ### Config file
-Config file must be named as \<scrip\t>.config, eg. `zbxmonitor.py` uses `zbxmonitor.config` and must be present in script "home" directory. Config should be not readable by others/group.
+Config file must be named as \<script\>.config, eg. `zbxmonitor.py` uses `zbxmonitor.config` and must be present in script "home" directory. Config should be not readable by others/group.
 Path to icons and sounds are relative to ./icons and ./sounds dirs.
 
 Section `zbxCredenials` is described in `zbxmonitor.config.example`. Section `zbxOptions` description:
