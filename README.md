@@ -30,13 +30,14 @@ Section `zbxCredenials` is described in `zbxmonitor.config.example`. Section `zb
 - ackOnly - default: True. Only unacknowledged messages will be shown. If empty monitor will show all (acknowledged and unacknowledged) messages.
 
 #### Filtering messages
+re.search() is used.
 - exclTg - default: empty list. If not empty `inclTg` is ignored. Example:<br>
-`exclTg = [ "SSL certificate", "Free disk space" ]` - all messages contains string in list will be suppressed.
+`exclTg = [ "^SSL.*certificate", ".*overload.*" ]` - all messages contains string in list will be suppressed.
 - inclTg - default: empty list. Valid only if `exclTg` is empty. Example:<br>
-`inclTg = [ "SSL certificate" ]` - only messages contains string in list will be shown.
+`inclTg = [ ".*\.google\.com" ]` - only messages contains string in list will be shown.
 
 ### Icon in tray
-- left click shows current filtered (if any) status of Zabbix Server.
+- left click shows current status of Zabbix Server.
 - right click brings popup:
     - Close applet
     - Show all (acknowledged and unacknowledged) messages

@@ -39,12 +39,12 @@ ackOnly = True
 
 ; exclTg = []
 exclTg = [
-    "SSL certificate",
+    "^SSL.*certificate",
     "Free disk space"
     ]
 
 ; inclTg = []
 inclTg = [
-    "SSL certificate"
+    ".*\.google\.com"
     ]
 

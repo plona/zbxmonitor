@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from socket import *
-from pyzabbix import *
-from subprocess import call
 from daemon import Daemon
-import time
-import os
+from dialog_nix import *
+from pyzabbix import *
+from socket import *
+from subprocess import call
+import ConfigParser
+import ast
 import getpass
 import gobject
 import notify2
+import os
+import re
 import syslog
-import ConfigParser
+import time
 import warnings
-import ast
-from dialog_nix import *
 
 
 class GlobVars:
@@ -363,14 +364,14 @@ class MyZbx:
                 if len(gv.zbxExclTg) > 0:
                     for flt in gv.zbxExclTg:
                         # print "flt/description/ack:", flt, "|", t['description'], "|", t['unacknowledged']
-                        if flt in t['description']:
+                        if re.search(flt, t['description']):
                             continue
                         else:
                             self.add_to_rval(t, rval)
                 elif len(gv.zbxInclTg) > 0:
                     for flt in gv.zbxInclTg:
                         # print "flt/description/ack:", flt, "|", t['description'], "|", t['unacknowledged']
-                        if flt in t['description']:
+                        if re.search(flt, t['description']):
                             self.add_to_rval(t, rval)
                         else:
                             continue
