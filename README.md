@@ -32,9 +32,9 @@ Section `zbxCredenials` is described in `zbxmonitor.config.example`. Section `zb
 #### Filtering messages
 re.search() is used.
 - exclTg - default: empty list. If not empty `inclTg` is ignored. Example:<br>
-`exclTg = [ "^SSL.*certificate", ".*overload.*" ]` - all messages contains string in list will be suppressed.
+`exclTg = [ "^SSL.*certificate", ".*overload.*" ]` - all messages contains strings in list will be suppressed.
 - inclTg - default: empty list. Valid only if `exclTg` is empty. Example:<br>
-`inclTg = [ ".*\.google\.com" ]` - only messages contains string in list will be shown.
+`inclTg = [ ".*\.google\.com" ]` - only messages contains strings in list will be shown.
 
 ### Icon in tray
 - left click shows current status of Zabbix Server.
