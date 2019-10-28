@@ -17,7 +17,7 @@ import ast
 from dialog_nix import *
 
 
-class Globs:
+class GlobVars:
     def __init__(self, script_name):
         self.script_full_path = os.path.abspath(script_name)
         self.script_dir = os.path.dirname(self.script_full_path)
@@ -72,9 +72,9 @@ class Globs:
         except:
             self.zbxport = self.defaults["port"]
         try:
-            self.zbxtext_mode = bool(self.config.get("zbxOptions", "text_mode"))
+            self.text_mode = bool(self.config.get("zbxOptions", "text_mode"))
         except:
-            self.zbxtext_mode = self.defaults["text_mode"]
+            self.text_mode = self.defaults["text_mode"]
         try:
             self.zbxignore_warn = bool(self.config.get("zbxOptions", "ignore_warn"))
         except:
@@ -110,9 +110,10 @@ class Globs:
         self.zbx_ping = 'ok'
         self.zbx_connected = 'ok'  # ok, port_is_down, not_logged, err_getting_data_1, err_getting_data_2
         self.zbx_status = self.zbx_last_status = 'ok'  # ok, >>current stat<<
+        self.zbx_filter = (True if len(self.zbxExclTg) or len(self.zbxInclTg) else False)
 
         if self.zbxpasswd is None:
-            if self.zbxtext_mode:
+            if self.text_mode:
                 print "Zabbix URL:", self.zbxurl
                 print "Zabbix user:", self.zbxuser
                 self.zbxpasswd = getpass.getpass(prompt="password: ")
@@ -127,26 +128,26 @@ class Globs:
 class TrayTxt:
     def __init__(self, command):
         zbx.status()
-        self.flog = open(globs.zbxlog, "a")
-        self.flog.write("\n" + globs.script_name + ": ")
+        self.flog = open(gv.zbxlog, "a")
+        self.flog.write("\n" + gv.script_name + ": ")
         self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
-        self.flog.write(" on " + globs.zbxhost + " " + command + "\n\n")
+        self.flog.write(" on " + gv.zbxhost + " " + command + "\n\n")
         self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())) + " ")
-        self.flog.write(globs.zbx_status + "\n")
+        self.flog.write(gv.zbx_status + "\n")
         self.flog.flush()
 
     def check(self):
         zbx.status()
-        syslog.syslog(globs.zbxhost + " status (txt): " + globs.zbx_status)
-        if globs.zbx_status != globs.zbx_last_status:
-            globs.zbx_last_status = globs.zbx_status
+        syslog.syslog(gv.zbxhost + " status (txt): " + gv.zbx_status)
+        if gv.zbx_status != gv.zbx_last_status:
+            gv.zbx_last_status = gv.zbx_status
             self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())) + " ")
-            self.flog.write(globs.zbx_status + "\n")
+            self.flog.write(gv.zbx_status + "\n")
             self.flog.flush()
-        return globs.zbx_status
+        return gv.zbx_status
 
     def tray(self):
-        gobject.timeout_add(globs.zbxinterval, self.check)
+        gobject.timeout_add(gv.zbxinterval, self.check)
         gobject.MainLoop().run()
 
 
@@ -156,10 +157,10 @@ class GtkMessages:
         self.statusIcon.connect('activate', self.show_current_stat)
         self.statusIcon.connect('popup-menu', self.on_right_click)
         zbx.status("filtered")
-        if globs.zbx_status != "ok":
-            self.set_icon(globs.zbxicon + "-err.png")
+        if gv.zbx_status != "ok":
+            self.set_icon(gv.zbxicon + "-err.png")
         else:
-            self.set_icon(globs.zbxicon + "-ok.png")
+            self.set_icon(gv.zbxicon + "-ok.png")
 
     def set_icon(self, icon_file):
         self.statusIcon.set_from_file(icon_file)
@@ -172,12 +173,12 @@ class GtkMessages:
 
     def make_menu(self, event_button, event_time, data=None):
         menu = gtk.Menu()
-        reconnect_item = gtk.MenuItem("Reconnect to " + globs.zbxhost)
-        close_item = gtk.MenuItem("Close applet " + globs.zbxhost)
-        show_unfiltered_item = gtk.MenuItem("Show unfiltered triggers " + globs.zbxhost)
-        show_all_item = gtk.MenuItem("Show all triggers " + globs.zbxhost)
+        reconnect_item = gtk.MenuItem("Reconnect to " + gv.zbxhost)
+        close_item = gtk.MenuItem("Close applet " + gv.zbxhost)
+        show_unfiltered_item = gtk.MenuItem("Show unfiltered triggers " + gv.zbxhost)
+        show_all_item = gtk.MenuItem("Show all triggers " + gv.zbxhost)
 
-        if globs.zbx_connected != 'ok' and globs.zbx_ping == 'ok':
+        if gv.zbx_connected != 'ok' and gv.zbx_ping == 'ok':
             menu.append(reconnect_item)
             reconnect_item.connect_object("activate", self.reconnect_to_zbxhost, "reconnect to zbx server")
             reconnect_item.show()
@@ -187,42 +188,45 @@ class GtkMessages:
         close_item.connect_object("activate", self.close_app, "Really close?")
         close_item.show()
 
-        if globs.zbx_connected == 'ok':
+        if gv.zbx_connected == 'ok':
             menu.append(show_all_item)
             show_all_item.connect_object("activate", self.show_all_triggers, "show all triggers")
             show_all_item.show()
-            menu.append(show_unfiltered_item)
-            show_unfiltered_item.connect_object("activate", self.show_unfiltered_triggers, "show unfiltered triggers")
-            show_unfiltered_item.show()
+            if gv.zbx_filter:
+                menu.append(show_unfiltered_item)
+                show_unfiltered_item.connect_object("activate", self.show_unfiltered_triggers, "show unfiltered triggers")
+                show_unfiltered_item.show()
 
         # Popup the menu
         menu.popup(None, None, None, event_button, event_time)
 
     def show_current_stat(self, event):
         zbx.status("filtered")
-        if globs.zbx_status != "ok":
-            self.set_icon(globs.zbxicon + "-err.png")
+        if gv.zbx_status != "ok":
+            self.set_icon(gv.zbxicon + "-err.png")
         else:
-            self.set_icon(globs.zbxicon + "-ok.png")
-        self.message(globs.zbxhost + " filtered triggers:\n\n" + globs.zbx_status)
+            self.set_icon(gv.zbxicon + "-ok.png")
+        m = (" filtered triggers:\n\n" if gv.zbx_filter else " current status:\n\n")
+        # self.message(gv.zbxhost + " filtered triggers:\n\n" + gv.zbx_status)
+        self.message(gv.zbxhost + m + gv.zbx_status)
 
     def on_right_click(self, data, event_button, event_time):
         self.make_menu(event_button, event_time)
 
     def reconnect_to_zbxhost(self, data=None):
         zbx.login()
-        self.message('Logging to ' + globs.zbxhost + ":\n" + globs.zbx_connected)
+        self.message('Logging to ' + gv.zbxhost + ":\n" + gv.zbx_connected)
 
     def show_unfiltered_triggers(self, data=None):
         zbx.status("unfiltered")
-        self.message(globs.zbxhost + " unfiltered triggers:\n\n" + globs.zbx_status)
+        self.message(gv.zbxhost + " unfiltered triggers:\n\n" + gv.zbx_status)
 
     def show_all_triggers(self, data=None):
         zbx.status("all")
-        self.message(globs.zbxhost + " all triggers:\n\n" + globs.zbx_status)
+        self.message(gv.zbxhost + " all triggers:\n\n" + gv.zbx_status)
 
     def close_app(self, data=None):
-        syslog.syslog(globs.zbxhost + ": disconnected.")
+        syslog.syslog(gv.zbxhost + ": disconnected.")
         gtk.main_quit()
         # if self.message(data, gtk.BUTTONS_OK_CANCEL) == gtk.RESPONSE_OK:
         #     gtk.main_quit()
@@ -235,42 +239,42 @@ class TrayIcon:
 
     def check(self):
         zbx.status("filtered")
-        syslog.syslog(globs.zbxhost + " status (GUI): " + globs.zbx_status)
-        if globs.zbx_status != globs.zbx_last_status:
-            globs.zbx_last_status = globs.zbx_status
-            if globs.zbxnotify:
-                n = notify2.Notification("Zabbix: " + globs.zbxhost, globs.zbx_status)
-                if globs.zbx_status == "ok":
+        syslog.syslog(gv.zbxhost + " status (GUI): " + gv.zbx_status)
+        if gv.zbx_status != gv.zbx_last_status:
+            gv.zbx_last_status = gv.zbx_status
+            if gv.zbxnotify:
+                n = notify2.Notification("Zabbix: " + gv.zbxhost, gv.zbx_status)
+                if gv.zbx_status == "ok":
                     n.set_urgency(1)
                 else:
                     n.set_urgency(2)
                     n.timeout = -1
                 n.show()
-            if globs.zbxwav is not None:
+            if gv.zbxwav is not None:
                 try:
                     f = open('/dev/null', 'w')
-                    if globs.zbx_status == 'ok':
-                        call([globs.zbxwav_player, globs.zbxwav + "-ok.wav"], stdout=f, stderr=f)
+                    if gv.zbx_status == 'ok':
+                        call([gv.zbxwav_player, gv.zbxwav + "-ok.wav"], stdout=f, stderr=f)
                     else:
-                        call([globs.zbxwav_player, globs.zbxwav + "-err.wav"], stdout=f, stderr=f)
+                        call([gv.zbxwav_player, gv.zbxwav + "-err.wav"], stdout=f, stderr=f)
                 except:
                     pass
-        if globs.zbx_status == 'ok':
-            self.__gmsg.set_icon(globs.zbxicon + "-ok.png")
+        if gv.zbx_status == 'ok':
+            self.__gmsg.set_icon(gv.zbxicon + "-ok.png")
         else:
-            self.__gmsg.set_icon(globs.zbxicon + "-err.png")
+            self.__gmsg.set_icon(gv.zbxicon + "-err.png")
         return True
 
     def tray(self):
-        gobject.timeout_add(globs.zbxinterval, self.check)
+        gobject.timeout_add(gv.zbxinterval, self.check)
         gtk.main()
 
 
 class MyZbx:
     def __init__(self):
-        self.zapi = ZabbixAPI(globs.zbxurl, timeout=5)
+        self.zapi = ZabbixAPI(gv.zbxurl, timeout=5)
         self.zapi.session.verify = False
-        if globs.zbxignore_warn:
+        if gv.zbxignore_warn:
             warnings.filterwarnings("ignore")
         self.login()
 
@@ -278,41 +282,41 @@ class MyZbx:
         sock = socket(AF_INET, SOCK_STREAM)
         sock.settimeout(2)
         try:
-            sock.connect((globs.zbxhost, globs.zbxport))
-            globs.zbx_ping = 'ok'
+            sock.connect((gv.zbxhost, gv.zbxport))
+            gv.zbx_ping = 'ok'
         except:
-            globs.zbx_ping = 'port is down'
+            gv.zbx_ping = 'port is down'
         finally:
             sock.close()
 
     def login(self):
         self.pingit()
-        if globs.zbx_ping == 'ok':
+        if gv.zbx_ping == 'ok':
             try:
-                self.zapi.login(globs.zbxuser, globs.zbxpasswd)
-                globs.zbx_connected = 'ok'
+                self.zapi.login(gv.zbxuser, gv.zbxpasswd)
+                gv.zbx_connected = 'ok'
             except:
-                globs.zbx_connected = 'not logged in'
+                gv.zbx_connected = 'not logged in'
             finally:
-                print "Connect: " + globs.zbx_connected
+                print "Connect: " + gv.zbx_connected
 
     def status(self, mode="all"):
         self.pingit()
-        if globs.zbx_ping != 'ok':
-            globs.zbx_status = globs.zbx_ping
-            return globs.zbx_status
-        if globs.zbx_connected == 'not logged in':
-            globs.zbx_status = globs.zbx_connected
-            return globs.zbx_status
-        globs.zbx_status = self.get_triggers(mode)
-        return globs.zbx_status
+        if gv.zbx_ping != 'ok':
+            gv.zbx_status = gv.zbx_ping
+            return gv.zbx_status
+        if gv.zbx_connected == 'not logged in':
+            gv.zbx_status = gv.zbx_connected
+            return gv.zbx_status
+        gv.zbx_status = self.get_triggers(mode)
+        return gv.zbx_status
 
     def add_to_rval(self, t, rval, extmode=False):
         if int(t["value"]) == 1:
             if extmode:
                 rval[0] += ("{0} - {1} {2}".format(t['hosts'][0]['host'], t['description'], '(Unack)' if t['unacknowledged'] else '') + "\n\n")
                 return
-            if globs.zbxackOnly:
+            if gv.zbxackOnly:
                 if t['unacknowledged']:
                     rval[0] += ("{0} - {1} {2}".format(t['hosts'][0]['host'], t['description'], '(Unack)' if t['unacknowledged'] else '') + "\n\n")
             else:
@@ -341,10 +345,10 @@ class MyZbx:
                                                    selectHosts=['host'],
                                                    withLastEventUnacknowledged=1,
                                                    )
-            globs.zbx_connected = 'ok'
+            gv.zbx_connected = 'ok'
         except:
-            globs.zbx_connected = "Fetch data error."
-            return globs.zbx_connected
+            gv.zbx_connected = "Fetch data error."
+            return gv.zbx_connected
 
         unack_trigger_ids = [t['triggerid'] for t in unack_triggers]
         for t in triggers:
@@ -356,15 +360,15 @@ class MyZbx:
         for t in triggers:
             # print "description/ack:", t['description'], "|", t['unacknowledged']
             if mode == "filtered":
-                if len(globs.zbxExclTg) > 0:
-                    for flt in globs.zbxExclTg:
+                if len(gv.zbxExclTg) > 0:
+                    for flt in gv.zbxExclTg:
                         # print "flt/description/ack:", flt, "|", t['description'], "|", t['unacknowledged']
                         if flt in t['description']:
                             continue
                         else:
                             self.add_to_rval(t, rval)
-                elif len(globs.zbxInclTg) > 0:
-                    for flt in globs.zbxInclTg:
+                elif len(gv.zbxInclTg) > 0:
+                    for flt in gv.zbxInclTg:
                         # print "flt/description/ack:", flt, "|", t['description'], "|", t['unacknowledged']
                         if flt in t['description']:
                             self.add_to_rval(t, rval)
@@ -387,12 +391,12 @@ class MyZbx:
 
 class myDaemon(Daemon):
     def run(self):
-        syslog.openlog(globs.script_name, syslog.LOG_PID | syslog.LOG_NDELAY, syslog.LOG_DAEMON)
+        syslog.openlog(gv.script_name, syslog.LOG_PID | syslog.LOG_NDELAY, syslog.LOG_DAEMON)
         tc.tray()
 
 
 def main(argv):
-    global globs, zbx, tc
+    global gv, zbx, tc
 
     if len(argv) == 1:
         command = "start"
@@ -405,26 +409,26 @@ def main(argv):
         print "Unknown command"
         sys.exit(2)
 
-    globs = Globs(argv[0])
-    print globs.script_name + ":", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), "on", globs.zbxhost, command
+    gv = GlobVars(argv[0])
+    print gv.script_name + ":", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), "on", gv.zbxhost, command
 
     if "start" == command:
         zbx = MyZbx()
-        if (globs.zbxtext_mode):
+        if (gv.text_mode):
             tc = TrayTxt(command)
         else:
             tc = TrayIcon()
 
-    f = globs.tmp_dir + "/" + globs.zbxhost
+    f = gv.tmp_dir + "/" + gv.zbxhost
     pidfile = f + ".pid"
     # stdoutfile = f  + ".out"
     # stderrfile = f + ".log"
     # daemon = myDaemon(pidfile, stderr=stderrfile, stdout=stdoutfile)
     daemon = myDaemon(pidfile)
     if 'start' == command:
-        daemon.start(globs.script_name, globs.zbxhost)
+        daemon.start(gv.script_name, gv.zbxhost)
     elif 'stop' == command:
-        daemon.stop(globs.zbxhost)
+        daemon.stop(gv.zbxhost)
     else:
         print "Unknown command"
         sys.exit(2)
