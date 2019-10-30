@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from daemon import Daemon
+import platform
+if platform.system() == 'Linux':
+    from daemon import Daemon
+    import syslog
 from dialog_nix import *
 from pyzabbix import *
 from socket import *
@@ -13,7 +16,6 @@ import gobject
 import notify2
 import os
 import re
-import syslog
 import time
 import warnings
 

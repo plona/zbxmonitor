@@ -1,7 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import gtk
+import platform
+if platform.system() == "Linux":
+    import gtk
+elif platform.system() == "Windows":
+    import gi
+    gi.require_version("Gtk", "3.0")
+    from gi.repository import Gtk as gtk
+else:
+    raise ValueError("Unknown OS")
 import sys
 
 
