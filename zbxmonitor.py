@@ -3,9 +3,9 @@
 
 import platform
 if platform.system() == 'Linux':
+    from dialog_nix import *
     from daemon import Daemon
     import syslog
-from dialog_nix import *
 from pyzabbix import *
 from socket import *
 from subprocess import call
@@ -13,7 +13,6 @@ import ConfigParser
 import ast
 import getpass
 import gobject
-#import notify2
 from plyer import notification
 import os
 import re
