@@ -1,4 +1,6 @@
 .idea/*
+bck/*
+tests/*
 tmp/*
 icons/*
 sounds/*
