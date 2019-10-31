@@ -12,7 +12,7 @@ If's recommended to not launch zbxmonitor.py directly, but to create symbolic li
 and launch this symlink. You can run multiple instances of monitor on multiple Zabbix Servers this way.
 
 ## Requirements
-All packages listed in `import` \*.py. Pyzabbix has been installed with `pip`.
+All packages listed in `import` \*.py.
 
 pip:
 - pyzabbix
