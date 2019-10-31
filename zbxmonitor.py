@@ -15,6 +15,7 @@ import ast
 import errno
 import getpass
 import gobject
+# import gtk
 import logging
 import os
 import re
@@ -210,7 +211,6 @@ class GtkMessages:
         else:
             self.set_icon(gv.zbxicon + "-ok.png")
         m = (" filtered triggers:\n\n" if gv.zbx_filter else " current status:\n\n")
-        # self.message(gv.zbxhost + " filtered triggers:\n\n" + gv.zbx_status)
         self.message(gv.zbxhost + m + gv.zbx_status)
 
     def on_right_click(self, data, event_button, event_time):
