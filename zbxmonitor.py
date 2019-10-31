@@ -9,11 +9,13 @@ if platform.system() == 'Linux':
 from pyzabbix import *
 from socket import *
 from subprocess import call
+from plyer import notification
 import ConfigParser
 import ast
+import errno
 import getpass
 import gobject
-from plyer import notification
+import logging
 import os
 import re
 import time
@@ -42,33 +44,45 @@ class GlobVars:
             self.zbxurl = self.config.get("zbxCredentials", "url")
         except:
             self.zbxurl = "https://" + self.zbxhost + "/zabbix"
-
-        self.tmp_dir = self.script_dir + "/" + "tmp"
-        try:
-            os.mkdir(self.tmp_dir)
-        except:
-            pass
-        self.zbxlog = self.tmp_dir + "/" + self.zbxhost + ".log"
-
+        #
         self.defaults = {
-                        "interval": 30 * 1000,
-                        "notify": True,
-                        "port": 10051,
-                        "text_mode": False,
-                        "ignore_warn": False,
-                        "icon": self.zbxhost,
-                        "wav": None,
-                        "wav_player": "/usr/bin/mpv",
-                        "ackOnly": True,
-                        "exclTg": [],
-                        "inclTg": []
-                        }
+            "interval": 30 * 1000,
+            "notify": True,
+            "port": 10051,
+            "text_mode": False,
+            "log_truncate": False,
+            "ignore_warn": False,
+            "icon": self.zbxhost,
+            "wav": None,
+            "wav_player": "/usr/bin/mpv",
+            "ackOnly": True,
+            "exclTg": [],
+            "inclTg": []
+        }
+        #
+        try:
+            self.log_truncate = ast.literal_eval(self.config.get("zbxOptions", "log_truncate"))
+        except:
+            self.log_truncate = self.defaults["log_truncate"]
+        #
+        self.make_dir(self.script_dir + "/log")
+        flog = self.script_dir + "/log/" + self.zbxhost + ".log"
+        if self.log_truncate:
+            try:
+                f = open(flog, 'w')
+                f.close()
+            except:
+                pass
+        logging.basicConfig(filename=flog, level=logging.INFO)
+        #
+        self.make_dir(self.script_dir + "/tmp")
+        #
         try:
             self.zbxinterval = int(self.config.get("zbxOptions", "interval")) * 1000
         except:
             self.zbxinterval = self.defaults["interval"]
         try:
-            self.zbxnotify = bool(self.config.get("zbxOptions", "notify"))
+            self.zbxnotify = ast.literal_eval(self.config.get("zbxOptions", "notify"))
         except:
             self.zbxnotify = self.defaults["notify"]
         try:
@@ -76,11 +90,11 @@ class GlobVars:
         except:
             self.zbxport = self.defaults["port"]
         try:
-            self.text_mode = bool(self.config.get("zbxOptions", "text_mode"))
+            self.text_mode = ast.literal_eval(self.config.get("zbxOptions", "text_mode"))
         except:
             self.text_mode = self.defaults["text_mode"]
         try:
-            self.zbxignore_warn = bool(self.config.get("zbxOptions", "ignore_warn"))
+            self.zbxignore_warn = ast.literal_eval(self.config.get("zbxOptions", "ignore_warn"))
         except:
             self.zbxignore_warn = self.defaults["ignore_warn"]
         try:
@@ -96,7 +110,7 @@ class GlobVars:
         except:
             self.zbxwav = self.defaults["wav"]
         try:
-            self.zbxackOnly = bool(self.config.get("zbxOptions", "ackOnly"))
+            self.zbxackOnly = ast.literal_eval(self.config.get("zbxOptions", "ackOnly"))
         except:
             self.zbxackOnly = self.defaults["ackOnly"]
         try:
@@ -128,59 +142,16 @@ class GlobVars:
                 gtk.main()
                 self.zbxpasswd = mypass[0]
 
+    def make_dir(self, name):
+        if not os.path.exists(name):
+            try:
+                os.mkdir(name)
+            except OSError as e:
+                if e.errno != errno.EEXIST:
+                    raise
 
-class MyDialog:
-
-    def getPasswd(self, passwd, host):
-        window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        window.set_size_request(350, 60)
-        window.set_position(gtk.WIN_POS_CENTER)
-        window.set_title(host + " - ZBX password:")
-        window.connect("delete_event", lambda w, e: gtk.main_quit())
-        window.connect('key_press_event', self.escape)
-
-        vbox = gtk.VBox(False, 0)
-        window.add(vbox)
-        vbox.show()
-
-        entry = gtk.Entry()
-        entry.set_max_length(50)
-        entry.set_invisible_char("*")
-        entry.set_visibility(False)
-        entry.connect("activate", self.myCallback, entry, window, passwd)
-        vbox.pack_start(entry, True, True, 0)
-        entry.show()
-
-        hbox = gtk.HBox(False, 0)
-        vbox.add(hbox)
-        hbox.show()
-
-        button = gtk.Button(stock=gtk.STOCK_CANCEL)
-        button.connect("clicked", lambda w: sys.exit(2))
-        hbox.pack_start(button, True, True, 0)
-        button.set_flags(gtk.CAN_DEFAULT)
-        button.grab_default()
-        button.show()
-
-        button = gtk.Button(stock=gtk.STOCK_OK)
-        button.connect("clicked", self.myCallback, entry, window, passwd)
-        hbox.pack_start(button, True, True, 0)
-        button.set_flags(gtk.CAN_DEFAULT)
-        button.grab_default()
-        button.show()
-
-        window.show()
-
-    def escape(self, widget, event):
-        if gtk.gdk.keyval_name(event.keyval) == "Escape":
-            #gtk.main_quit()
-            #return False
-            sys.exit(2)
-
-    def myCallback(self, widget, entry, window, passwd):
-        passwd[0] = entry.get_text()
-        window.destroy()
-        gtk.main_quit()
+    def ltime(self):
+        return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
 
 
 class GtkMessages:
@@ -258,7 +229,7 @@ class GtkMessages:
         self.message(gv.zbxhost + " all triggers:\n\n" + gv.zbx_status)
 
     def close_app(self, data=None):
-        syslog.syslog(gv.zbxhost + ": disconnected.")
+        logging.info(' %s - %s: disconnected', gv.ltime(), gv.zbxhost)
         gtk.main_quit()
         # if self.message(data, gtk.BUTTONS_OK_CANCEL) == gtk.RESPONSE_OK:
         #     gtk.main_quit()
@@ -270,7 +241,7 @@ class TrayIcon:
 
     def check(self):
         zbx.status("filtered")
-        syslog.syslog(gv.zbxhost + " status (GUI): " + gv.zbx_status)
+        logging.info(' %s - %s status (GUI): %s',gv.ltime(), gv.zbxhost, gv.zbx_status)
         if gv.zbx_status != gv.zbx_last_status:
             gv.zbx_last_status = gv.zbx_status
             if gv.zbxnotify:
@@ -304,23 +275,15 @@ class TrayIcon:
 
 class TrayTxt:
     def __init__(self, command):
-        zbx.status()
-        self.flog = open(gv.zbxlog, "a")
-        self.flog.write("\n" + gv.script_name + ": ")
-        self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
-        self.flog.write(" on " + gv.zbxhost + " " + command + "\n\n")
-        self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())) + " ")
-        self.flog.write(gv.zbx_status + "\n")
-        self.flog.flush()
+        zbx.status("unfiltered")
+        logging.info(' %s - %s status (txt): %s',gv.ltime(), gv.zbxhost, gv.zbx_status)
 
     def check(self):
-        zbx.status()
-        syslog.syslog(gv.zbxhost + " status (txt): " + gv.zbx_status)
+        zbx.status("unfiltered")
+        logging.info(' %s - %s status (txt): %s',gv.ltime(), gv.zbxhost, gv.zbx_status)
         if gv.zbx_status != gv.zbx_last_status:
             gv.zbx_last_status = gv.zbx_status
-            self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())) + " ")
-            self.flog.write(gv.zbx_status + "\n")
-            self.flog.flush()
+            logging.info(' %s - %s status (txt): %s',gv.ltime(), gv.zbxhost, gv.zbx_status)
         return gv.zbx_status
 
     def tray(self):
@@ -477,7 +440,7 @@ def main(argv):
         else:
             tc = TrayIcon()
 
-    f = gv.tmp_dir + "/" + gv.zbxhost
+    f = gv.script_dir + "/tmp/" + gv.zbxhost
     pidfile = f + ".pid"
     # stdoutfile = f  + ".out"
     # stderrfile = f + ".log"

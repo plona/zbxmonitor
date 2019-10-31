@@ -10,31 +10,28 @@ url = https://host.example.com/zabbix
 
 [zbxOptions]
 ; all opions in this section are optional. Defaults:
+; ackOnly = True
+; icon = host[-ok.png|-err.png]
+; ignore_warn = False
 ; interval = 30[s]
+; log_truncate = False
 ; notify = True
 ; port = 10051
 ; text_mode = False
-; ignore_warn = False
-; icon = host[-ok.png|-err.png]
 ; wav = None
 ; wav_player = /usr/bin/mpv
-; ackOnly = True
 ; exclTg = []
 ; inclTg = []
 
 interval = 30
-; notify =
 notify = True
 port = 10051
-; text_mode = True
-text_mode =
-; ignore_warn =
+text_mode = False
 ignore_warn = True
 ; icon = host.example.com
 icon = icon
 wav = sound
 wav_player = /usr/bin/mpv
-; ackOnly =
 ackOnly = True
 
 ; exclTg = []

@@ -23,15 +23,16 @@ Config file must be named as \<script\>.config, eg. `zbxmonitor.py` uses `zbxmon
 Path to icons and sounds are relative to ./icons and ./sounds dirs.
 
 Section `zbxCredenials` is described in `zbxmonitor.config.example`. Section `zbxOptions` description:
+- ackOnly - default: True. Only unacknowledged messages will be shown. If empty monitor will show all (acknowledged and unacknowledged) messages.
 - icon - default: host in `zbxCredenials`. You must have two files in ./icons dir: `host.example.com-ok.png` and `host.example.com-err.png` in this example.
+- ignore_warn - default: False. True - SSL warnings will be suppressed (when connecting to Zabbix Server via https)
+- interval - default: 30[s]. Pooling interval
+- log_truncate - default: False. If True log file in ./log will be truncated at start.
+- notify - default: True. Messages will be send to notification daemon (eg. `dunst`). If empty you will be not notified, but status will be still enabled by left or right click on script icon.
+- port - default: 10051
+- text_mode - default: False. If True (or 0) zbxmonitor will work in text mode only. It is rather for testing purpose.
 - wav - default: None. You must have two files (named aka icons) in ./sounds dir if specified.
 - wav_player - default: /usr/bin/mpv. External wav player. Ignored if wav is not specified.
-- interval - default: 30[s]. Pooling interval
-- port - default: 10051
-- notify - default: True. Messages will be send to notification daemon (eg. `dunst`). If empty you will be not notified, but status will be still enabled by left or right click on script icon.
-- ignore_warn - default: False. True - SSL warnings will be suppressed (when connecting to Zabbix Server via https)
-- text_mode - default: False. If True (or not empty) zbxmonitor will work in text mode only. It is rather for testing purpose.
-- ackOnly - default: True. Only unacknowledged messages will be shown. If empty monitor will show all (acknowledged and unacknowledged) messages.
 
 #### Filtering messages
 re.search() is used.
