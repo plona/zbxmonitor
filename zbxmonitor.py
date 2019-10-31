@@ -244,13 +244,18 @@ class TrayIcon:
         logging.info(' %s - %s status (GUI): %s',gv.ltime(), gv.zbxhost, gv.zbx_status)
         if gv.zbx_status != gv.zbx_last_status:
             gv.zbx_last_status = gv.zbx_status
+            tmo=(10 if gv.zbx_status == "ok" else 0)
+            # if gv.zbx_status == "ok":
+            #     tmo=10
+            # else:
+            #     tmo=0
             if gv.zbxnotify:
                 notification.notify(
                     title="Zabbix: " + gv.zbxhost,
                     message=gv.zbx_status,
                     app_name=gv.script_name,
                     app_icon="",
-                    timeout=0,
+                    timeout=tmo,
                     ticker=gv.script_short_name,
                 )
             if gv.zbxwav is not None and gv.OS == "Linux":
