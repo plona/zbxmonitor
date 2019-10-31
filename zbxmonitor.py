@@ -13,7 +13,8 @@ import ConfigParser
 import ast
 import getpass
 import gobject
-import notify2
+#import notify2
+from plyer import notification
 import os
 import re
 import time
@@ -22,6 +23,7 @@ import warnings
 
 class GlobVars:
     def __init__(self, script_name):
+        self.OS = platform.system()
         self.script_full_path = os.path.abspath(script_name)
         self.script_dir = os.path.dirname(self.script_full_path)
         self.script_name = os.path.basename(self.script_full_path)
@@ -238,7 +240,7 @@ class GtkMessages:
 class TrayIcon:
     def __init__(self):
         self.__gmsg = GtkMessages()
-        notify2.init("zab_mon")
+        # notify2.init("zab_mon")
 
     def check(self):
         zbx.status("filtered")
@@ -246,14 +248,23 @@ class TrayIcon:
         if gv.zbx_status != gv.zbx_last_status:
             gv.zbx_last_status = gv.zbx_status
             if gv.zbxnotify:
-                n = notify2.Notification("Zabbix: " + gv.zbxhost, gv.zbx_status)
-                if gv.zbx_status == "ok":
-                    n.set_urgency(1)
-                else:
-                    n.set_urgency(2)
-                    n.timeout = -1
-                n.show()
-            if gv.zbxwav is not None:
+                notification.notify(
+                    title="Zabbix: " + gv.zbxhost,
+                    message=gv.zbx_status,
+                    app_name=gv.script_name,
+                    app_icon="",
+                    timeout=0,
+                    ticker=gv.script_short_name,
+                )
+            # if gv.zbxnotify:
+            #     n = notify2.Notification("Zabbix: " + gv.zbxhost, gv.zbx_status)
+            #     if gv.zbx_status == "ok":
+            #         n.set_urgency(1)
+            #     else:
+            #         n.set_urgency(2)
+            #         n.timeout = -1
+            #     n.show()
+            if gv.zbxwav is not None and gv.OS == "Linux":
                 try:
                     f = open('/dev/null', 'w')
                     if gv.zbx_status == 'ok':
