@@ -130,32 +130,6 @@ class GlobVars:
                 self.zbxpasswd = mypass[0]
 
 
-class TrayTxt:
-    def __init__(self, command):
-        zbx.status()
-        self.flog = open(gv.zbxlog, "a")
-        self.flog.write("\n" + gv.script_name + ": ")
-        self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
-        self.flog.write(" on " + gv.zbxhost + " " + command + "\n\n")
-        self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())) + " ")
-        self.flog.write(gv.zbx_status + "\n")
-        self.flog.flush()
-
-    def check(self):
-        zbx.status()
-        syslog.syslog(gv.zbxhost + " status (txt): " + gv.zbx_status)
-        if gv.zbx_status != gv.zbx_last_status:
-            gv.zbx_last_status = gv.zbx_status
-            self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())) + " ")
-            self.flog.write(gv.zbx_status + "\n")
-            self.flog.flush()
-        return gv.zbx_status
-
-    def tray(self):
-        gobject.timeout_add(gv.zbxinterval, self.check)
-        gobject.MainLoop().run()
-
-
 class GtkMessages:
     def __init__(self):
         self.statusIcon = gtk.StatusIcon()
@@ -240,7 +214,6 @@ class GtkMessages:
 class TrayIcon:
     def __init__(self):
         self.__gmsg = GtkMessages()
-        # notify2.init("zab_mon")
 
     def check(self):
         zbx.status("filtered")
@@ -256,14 +229,6 @@ class TrayIcon:
                     timeout=0,
                     ticker=gv.script_short_name,
                 )
-            # if gv.zbxnotify:
-            #     n = notify2.Notification("Zabbix: " + gv.zbxhost, gv.zbx_status)
-            #     if gv.zbx_status == "ok":
-            #         n.set_urgency(1)
-            #     else:
-            #         n.set_urgency(2)
-            #         n.timeout = -1
-            #     n.show()
             if gv.zbxwav is not None and gv.OS == "Linux":
                 try:
                     f = open('/dev/null', 'w')
@@ -282,6 +247,32 @@ class TrayIcon:
     def tray(self):
         gobject.timeout_add(gv.zbxinterval, self.check)
         gtk.main()
+
+
+class TrayTxt:
+    def __init__(self, command):
+        zbx.status()
+        self.flog = open(gv.zbxlog, "a")
+        self.flog.write("\n" + gv.script_name + ": ")
+        self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
+        self.flog.write(" on " + gv.zbxhost + " " + command + "\n\n")
+        self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())) + " ")
+        self.flog.write(gv.zbx_status + "\n")
+        self.flog.flush()
+
+    def check(self):
+        zbx.status()
+        syslog.syslog(gv.zbxhost + " status (txt): " + gv.zbx_status)
+        if gv.zbx_status != gv.zbx_last_status:
+            gv.zbx_last_status = gv.zbx_status
+            self.flog.write(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())) + " ")
+            self.flog.write(gv.zbx_status + "\n")
+            self.flog.flush()
+        return gv.zbx_status
+
+    def tray(self):
+        gobject.timeout_add(gv.zbxinterval, self.check)
+        gobject.MainLoop().run()
 
 
 class MyZbx:
