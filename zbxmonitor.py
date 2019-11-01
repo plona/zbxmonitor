@@ -6,6 +6,11 @@ if platform.system() == 'Linux':
     import gobject
     from dialog_nix import *
     from daemon import Daemon
+if platform.system() == 'Windows':
+    import gi
+    gi.require_version("Gtk", "3.0")
+    from gi.repository import Gtk as gtk
+    from gi.repository import GObject as gobject
 from pyzabbix import *
 from socket import *
 from subprocess import call
