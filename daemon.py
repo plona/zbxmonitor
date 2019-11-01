@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
-import sys, os, time, atexit, errno, syslog
+import sys
+import os
+import time
+import atexit
+import errno
+import logging
 from signal import SIGTERM
 
 class Daemon:
@@ -55,8 +60,7 @@ class Daemon:
         os.dup2(so.fileno(), sys.stdout.fileno())
         os.dup2(se.fileno(), sys.stderr.fileno())
 
-        syslog.openlog(script_name, syslog.LOG_PID | syslog.LOG_NDELAY, syslog.LOG_DAEMON)
-        syslog.syslog(host + " " + "started")
+        logging.info('%s: started', host)
 
         # write pidfile
         atexit.register(self.delpid)
@@ -105,7 +109,7 @@ class Daemon:
             return # not an error in a restart
 
         # Try killing the daemon process
-        syslog.syslog(host + " stopped")
+        logging.info('%s: stopped', host)
         try:
             while 1:
                 os.kill(pid, SIGTERM)

@@ -1,2 +1,4 @@
+2019-11-01 Fri 16:25:13 PM
+syslog has been replaced by logging (Win)
 2019-10-31 Thu 12:52:12 PM
 notify2 has been replaced by plyer (for Windows compatibility)

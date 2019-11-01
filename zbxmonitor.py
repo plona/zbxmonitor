@@ -5,7 +5,6 @@ import platform
 if platform.system() == 'Linux':
     from dialog_nix import *
     from daemon import Daemon
-    import syslog
 from pyzabbix import *
 from socket import *
 from subprocess import call
@@ -68,13 +67,8 @@ class GlobVars:
         #
         self.make_dir(self.script_dir + "/log")
         flog = self.script_dir + "/log/" + self.zbxhost + ".log"
-        if self.log_truncate:
-            try:
-                f = open(flog, 'w')
-                f.close()
-            except:
-                pass
-        logging.basicConfig(filename=flog, level=logging.INFO)
+        fmode = ('w' if self.log_truncate else 'a')
+        logging.basicConfig(format='%(asctime)s|%(levelname)s|%(name)s|%(message)s', filename=flog, filemode=fmode, level=logging.INFO)
         #
         self.make_dir(self.script_dir + "/tmp")
         #
@@ -151,9 +145,6 @@ class GlobVars:
                 if e.errno != errno.EEXIST:
                     raise
 
-    def ltime(self):
-        return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
-
 
 class GtkMessages:
     def __init__(self):
@@ -229,7 +220,7 @@ class GtkMessages:
         self.message(gv.zbxhost + " all triggers:\n\n" + gv.zbx_status)
 
     def close_app(self, data=None):
-        logging.info(' %s - %s: disconnected', gv.ltime(), gv.zbxhost)
+        logging.info('%s: disconnected', gv.zbxhost)
         gtk.main_quit()
         # if self.message(data, gtk.BUTTONS_OK_CANCEL) == gtk.RESPONSE_OK:
         #     gtk.main_quit()
@@ -241,14 +232,13 @@ class TrayIcon:
 
     def check(self):
         zbx.status("filtered")
-        logging.info(' %s - %s status (GUI): %s',gv.ltime(), gv.zbxhost, gv.zbx_status)
+        if gv.zbx_status == "ok":
+            logging.info('%s status (GUI): %s', gv.zbxhost, gv.zbx_status)
+        else:
+            logging.warning('%s status (GUI): %s', gv.zbxhost, gv.zbx_status)
         if gv.zbx_status != gv.zbx_last_status:
             gv.zbx_last_status = gv.zbx_status
             tmo=(10 if gv.zbx_status == "ok" else 0)
-            # if gv.zbx_status == "ok":
-            #     tmo=10
-            # else:
-            #     tmo=0
             if gv.zbxnotify:
                 notification.notify(
                     title="Zabbix: " + gv.zbxhost,
@@ -281,14 +271,23 @@ class TrayIcon:
 class TrayTxt:
     def __init__(self, command):
         zbx.status("unfiltered")
-        logging.info(' %s - %s status (txt): %s',gv.ltime(), gv.zbxhost, gv.zbx_status)
+        if gv.zbx_status == "ok":
+            logging.info('%s status (txt): %s', gv.zbxhost, gv.zbx_status)
+        else:
+            logging.warning('%s status (txt): %s', gv.zbxhost, gv.zbx_status)
 
     def check(self):
         zbx.status("unfiltered")
-        logging.info(' %s - %s status (txt): %s',gv.ltime(), gv.zbxhost, gv.zbx_status)
+        if gv.zbx_status == "ok":
+            logging.info('%s status (txt): %s', gv.zbxhost, gv.zbx_status)
+        else:
+            logging.warning('%s status (txt): %s', gv.zbxhost, gv.zbx_status)
         if gv.zbx_status != gv.zbx_last_status:
             gv.zbx_last_status = gv.zbx_status
-            logging.info(' %s - %s status (txt): %s',gv.ltime(), gv.zbxhost, gv.zbx_status)
+            if gv.zbx_status == "ok":
+                logging.info('%s status (txt): %s', gv.zbxhost, gv.zbx_status)
+            else:
+                logging.warning('%s status (txt): %s', gv.zbxhost, gv.zbx_status)
         return gv.zbx_status
 
     def tray(self):
@@ -417,7 +416,6 @@ class MyZbx:
 
 class myDaemon(Daemon):
     def run(self):
-        syslog.openlog(gv.script_name, syslog.LOG_PID | syslog.LOG_NDELAY, syslog.LOG_DAEMON)
         tc.tray()
 
 
