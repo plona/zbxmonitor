@@ -3,6 +3,7 @@
 
 import platform
 if platform.system() == 'Linux':
+    import gobject
     from dialog_nix import *
     from daemon import Daemon
 from pyzabbix import *
@@ -13,8 +14,6 @@ import ConfigParser
 import ast
 import errno
 import getpass
-import gobject
-# import gtk
 import logging
 import os
 import re
