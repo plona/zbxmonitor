@@ -24,6 +24,7 @@ import warnings
 
 class GlobVars:
     def __init__(self, script_name):
+        self.OS = platform.system()
         self.script_full_path = os.path.abspath(script_name)
         self.script_dir = os.path.dirname(self.script_full_path)
         self.script_name = os.path.basename(self.script_full_path)
@@ -287,7 +288,7 @@ class MyGtk:
 
 class TrayIcon:
     def __init__(self):
-        self.__gmsg = (MyGtk() if gv.OS == 'Linux' else MyGtkWin())
+        self.__gmsg = MyGtk()
 
     def check(self):
         zbx.status("filtered")
