@@ -3,22 +3,17 @@
 
 import platform
 if platform.system() == 'Linux':
-    import gtk
-    import gobject
     from daemon import Daemon
-else:
-    import gi
-    gi.require_version("Gtk", "3.0")
-    from gi.repository import Gtk as gtk
-    from gi.repository import GObject as gobject
+from plyer import notification
 from pyzabbix import *
 from socket import *
 from subprocess import call
-from plyer import notification
 import ConfigParser
 import ast
 import errno
 import getpass
+import gobject
+import gtk
 import logging
 import os
 import re
@@ -29,7 +24,6 @@ import warnings
 
 class GlobVars:
     def __init__(self, script_name):
-        self.OS = platform.system()
         self.script_full_path = os.path.abspath(script_name)
         self.script_dir = os.path.dirname(self.script_full_path)
         self.script_name = os.path.basename(self.script_full_path)
@@ -206,169 +200,89 @@ class MyDialog:
 
 
 if platform.system() == 'Linux':
-    class MyGtk:
-        def __init__(self):
-            self.statusIcon = gtk.StatusIcon()
-            self.statusIcon.connect('activate', self.show_current_stat)
-            self.statusIcon.connect('popup-menu', self.on_right_click)
-            zbx.status("filtered")
-            if gv.zbx_status != "ok":
-                self.set_icon(gv.zbxicon + "-err.png")
-            else:
-                self.set_icon(gv.zbxicon + "-ok.png")
-
-        def set_icon(self, icon_file):
-            self.statusIcon.set_from_file(icon_file)
-
-        def message(self, data=None, type=gtk.BUTTONS_OK):
-            msg = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO, type, data)
-            rval = msg.run()
-            msg.destroy()
-            return rval
-
-        def make_menu(self, event_button, event_time, data=None):
-            menu = gtk.Menu()
-            reconnect_item = gtk.MenuItem("Reconnect to " + gv.zbxhost)
-            close_item = gtk.MenuItem("Close applet " + gv.zbxhost)
-            show_unfiltered_item = gtk.MenuItem("Show unfiltered triggers " + gv.zbxhost)
-            show_all_item = gtk.MenuItem("Show all triggers " + gv.zbxhost)
-
-            if gv.zbx_connected != 'ok' and gv.zbx_ping == 'ok':
-                menu.append(reconnect_item)
-                reconnect_item.connect_object("activate", self.reconnect_to_zbxhost, "reconnect to zbx server")
-                reconnect_item.show()
-
-            menu.append(close_item)
-            # add callback
-            close_item.connect_object("activate", self.close_app, "Really close?")
-            close_item.show()
-
-            if gv.zbx_connected == 'ok':
-                menu.append(show_all_item)
-                show_all_item.connect_object("activate", self.show_all_triggers, "show all triggers")
-                show_all_item.show()
-                if gv.zbx_filter:
-                    menu.append(show_unfiltered_item)
-                    show_unfiltered_item.connect_object("activate", self.show_unfiltered_triggers, "show unfiltered triggers")
-                    show_unfiltered_item.show()
-
-            # Popup the menu
-            menu.popup(None, None, None, event_button, event_time)
-
-        def show_current_stat(self, event):
-            zbx.status("filtered")
-            if gv.zbx_status != "ok":
-                self.set_icon(gv.zbxicon + "-err.png")
-            else:
-                self.set_icon(gv.zbxicon + "-ok.png")
-            m = (" filtered triggers:\n\n" if gv.zbx_filter else " current status:\n\n")
-            self.message(gv.zbxhost + m + gv.zbx_status)
-
-        def on_right_click(self, data, event_button, event_time):
-            self.make_menu(event_button, event_time)
-
-        def reconnect_to_zbxhost(self, data=None):
-            zbx.login()
-            self.message('Logging to ' + gv.zbxhost + ":\n" + gv.zbx_connected)
-
-        def show_unfiltered_triggers(self, data=None):
-            zbx.status("unfiltered")
-            self.message(gv.zbxhost + " unfiltered triggers:\n\n" + gv.zbx_status)
-
-        def show_all_triggers(self, data=None):
-            zbx.status("all")
-            self.message(gv.zbxhost + " all triggers:\n\n" + gv.zbx_status)
-
-        def close_app(self, data=None):
-            logging.info('%s: disconnected', gv.zbxhost)
-            gtk.main_quit()
-            # if self.message(data, gtk.BUTTONS_OK_CANCEL) == gtk.RESPONSE_OK:
-            #     gtk.main_quit()
-
-
     class myDaemon(Daemon):
         def run(self):
             tc.tray()
-else:
-#if platform.system() == 'Windows':
-    class MyGtkWin:
-        def __init__(self):
-            self.statusIcon = gtk.StatusIcon()
-            self.statusIcon.connect('activate', self.show_current_stat)
-            self.statusIcon.connect('popup-menu', self.on_right_click)
-            zbx.status("filtered")
-            if gv.zbx_status != "ok":
-                self.set_icon(gv.zbxicon + "-err.png")
-            else:
-                self.set_icon(gv.zbxicon + "-ok.png")
 
-        def set_icon(self, icon_file):
-            self.statusIcon.set_from_file(icon_file)
 
-        def message(self, data=None, type=gtk.STOCK_OK):
-            msg = gtk.MessageDialog(None, gtk.MESSAGE_INFO, type, data)
-            rval = msg.run()
-            msg.destroy()
-            return rval
+class MyGtk:
+    def __init__(self):
+        self.statusIcon = gtk.StatusIcon()
+        self.statusIcon.connect('activate', self.show_current_stat)
+        self.statusIcon.connect('popup-menu', self.on_right_click)
+        zbx.status("filtered")
+        if gv.zbx_status != "ok":
+            self.set_icon(gv.zbxicon + "-err.png")
+        else:
+            self.set_icon(gv.zbxicon + "-ok.png")
 
-        def make_menu(self, event_button, event_time, data=None):
-            menu = gtk.Menu()
-            reconnect_item = gtk.MenuItem("Reconnect to " + gv.zbxhost)
-            close_item = gtk.MenuItem("Close applet " + gv.zbxhost)
-            show_unfiltered_item = gtk.MenuItem("Show unfiltered triggers " + gv.zbxhost)
-            show_all_item = gtk.MenuItem("Show all triggers " + gv.zbxhost)
+    def set_icon(self, icon_file):
+        self.statusIcon.set_from_file(icon_file)
 
-            if gv.zbx_connected != 'ok' and gv.zbx_ping == 'ok':
-                menu.append(reconnect_item)
-                reconnect_item.connect_object("activate", self.reconnect_to_zbxhost, "reconnect to zbx server")
-                reconnect_item.show()
+    def message(self, data=None, type=gtk.BUTTONS_OK):
+        msg = gtk.MessageDialog(None, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO, type, data)
+        rval = msg.run()
+        msg.destroy()
+        return rval
 
-            menu.append(close_item)
-            # add callback
-            close_item.connect_object("activate", self.close_app, "Really close?")
-            close_item.show()
+    def make_menu(self, event_button, event_time, data=None):
+        menu = gtk.Menu()
+        reconnect_item = gtk.MenuItem("Reconnect to " + gv.zbxhost)
+        close_item = gtk.MenuItem("Close applet " + gv.zbxhost)
+        show_unfiltered_item = gtk.MenuItem("Show unfiltered triggers " + gv.zbxhost)
+        show_all_item = gtk.MenuItem("Show all triggers " + gv.zbxhost)
 
-            if gv.zbx_connected == 'ok':
-                menu.append(show_all_item)
-                show_all_item.connect_object("activate", self.show_all_triggers, "show all triggers")
-                show_all_item.show()
-                if gv.zbx_filter:
-                    menu.append(show_unfiltered_item)
-                    show_unfiltered_item.connect_object("activate", self.show_unfiltered_triggers, "show unfiltered triggers")
-                    show_unfiltered_item.show()
+        if gv.zbx_connected != 'ok' and gv.zbx_ping == 'ok':
+            menu.append(reconnect_item)
+            reconnect_item.connect_object("activate", self.reconnect_to_zbxhost, "reconnect to zbx server")
+            reconnect_item.show()
 
-            # Popup the menu
-            menu.popup(None, None, None, event_button, event_time)
+        menu.append(close_item)
+        # add callback
+        close_item.connect_object("activate", self.close_app, "Really close?")
+        close_item.show()
 
-        def show_current_stat(self, event):
-            zbx.status("filtered")
-            if gv.zbx_status != "ok":
-                self.set_icon(gv.zbxicon + "-err.png")
-            else:
-                self.set_icon(gv.zbxicon + "-ok.png")
-            m = (" filtered triggers:\n\n" if gv.zbx_filter else " current status:\n\n")
-            self.message(gv.zbxhost + m + gv.zbx_status)
+        if gv.zbx_connected == 'ok':
+            menu.append(show_all_item)
+            show_all_item.connect_object("activate", self.show_all_triggers, "show all triggers")
+            show_all_item.show()
+            if gv.zbx_filter:
+                menu.append(show_unfiltered_item)
+                show_unfiltered_item.connect_object("activate", self.show_unfiltered_triggers, "show unfiltered triggers")
+                show_unfiltered_item.show()
 
-        def on_right_click(self, data, event_button, event_time):
-            self.make_menu(event_button, event_time)
+        # Popup the menu
+        menu.popup(None, None, None, event_button, event_time)
 
-        def reconnect_to_zbxhost(self, data=None):
-            zbx.login()
-            self.message('Logging to ' + gv.zbxhost + ":\n" + gv.zbx_connected)
+    def show_current_stat(self, event):
+        zbx.status("filtered")
+        if gv.zbx_status != "ok":
+            self.set_icon(gv.zbxicon + "-err.png")
+        else:
+            self.set_icon(gv.zbxicon + "-ok.png")
+        m = (" filtered triggers:\n\n" if gv.zbx_filter else " current status:\n\n")
+        self.message(gv.zbxhost + m + gv.zbx_status)
 
-        def show_unfiltered_triggers(self, data=None):
-            zbx.status("unfiltered")
-            self.message(gv.zbxhost + " unfiltered triggers:\n\n" + gv.zbx_status)
+    def on_right_click(self, data, event_button, event_time):
+        self.make_menu(event_button, event_time)
 
-        def show_all_triggers(self, data=None):
-            zbx.status("all")
-            self.message(gv.zbxhost + " all triggers:\n\n" + gv.zbx_status)
+    def reconnect_to_zbxhost(self, data=None):
+        zbx.login()
+        self.message('Logging to ' + gv.zbxhost + ":\n" + gv.zbx_connected)
 
-        def close_app(self, data=None):
-            logging.info('%s: disconnected', gv.zbxhost)
-            gtk.main_quit()
-            # if self.message(data, gtk.BUTTONS_OK_CANCEL) == gtk.RESPONSE_OK:
-            #     gtk.main_quit()
+    def show_unfiltered_triggers(self, data=None):
+        zbx.status("unfiltered")
+        self.message(gv.zbxhost + " unfiltered triggers:\n\n" + gv.zbx_status)
+
+    def show_all_triggers(self, data=None):
+        zbx.status("all")
+        self.message(gv.zbxhost + " all triggers:\n\n" + gv.zbx_status)
+
+    def close_app(self, data=None):
+        logging.info('%s: disconnected', gv.zbxhost)
+        gtk.main_quit()
+        # if self.message(data, gtk.BUTTONS_OK_CANCEL) == gtk.RESPONSE_OK:
+        #     gtk.main_quit()
 
 
 class TrayIcon:
