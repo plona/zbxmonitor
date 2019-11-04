@@ -49,4 +49,11 @@ re.search() is used.
     - Show unfiltered and unacknowledged messages
 
 ## To do
-Windows port :-(
+### Requirements
+- Python 2.7.17 (64 bit), python-2.7.17.amd64.msi
+- Python 2.7 pycairo-1.10.0 (64-bit), py2cairo-1.10.0.win-amd64-py2.7.exe
+- Python 2.7 pygobject-2.28.6 (64-bit), pygobject-2.28.6.win-amd64-py2.7.exe
+- Python 2.7 pygtk-2.22.0 (64-bit), pygtk-2.22.0.win-amd64-py2.7.exe
+
+Entries: `wav` and `wav_player` are ignored in windows.<br>
+I don't know how to daemonize script - there is no `fork` in windows. 
