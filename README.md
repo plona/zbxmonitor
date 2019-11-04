@@ -23,7 +23,7 @@ Config file must be named as \<script\>.config, eg. `zbxmonitor.py` uses `zbxmon
 Path to icons and sounds are relative to ./icons and ./sounds dirs.
 
 Section `zbxCredenials` is described in `zbxmonitor.config.example`. Section `zbxOptions` description:
-- ackOnly - default: True. Only unacknowledged messages will be shown. If empty monitor will show all (acknowledged and unacknowledged) messages.
+- ackOnly - default: True. Only unacknowledged messages will be shown. If False monitor will show all (acknowledged and unacknowledged) messages.
 - icon - default: host in `zbxCredenials`. You must have two files in ./icons dir: `host.example.com-ok.png` and `host.example.com-err.png` in this example.
 - ignore_warn - default: False. True - SSL warnings will be suppressed (when connecting to Zabbix Server via https)
 - interval - default: 30[s]. Pooling interval
@@ -60,3 +60,4 @@ I don't know how to daemonize script - there is no `fork` in windows. But you ca
 ```
 <path_to_pythonw.exe> <path_to_script>
 ```
+Notification in windows sometime works, but sometime doesn't. Icon i tray works fine.
