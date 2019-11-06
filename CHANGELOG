@@ -1,3 +1,8 @@
+2019-11-06 Wed 09:29:15 AM
+Linux: fixed error.
+When no notification daemon zbxmonitor dropped connection to server silently.
+Now writes down to log and exit.
+
 2019-11-04 Mon 11:04:56 AM
 Windows port
 

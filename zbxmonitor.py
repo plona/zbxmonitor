@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
 import platform
 if platform.system() == 'Linux':
     from daemon import Daemon
-from plyer import notification
+    import notify2
+elif platform.system() == 'Windows':
+    from plyer import notification
+else:
+    print "Unsupported OS"
+    sys.exit(1)
 from pyzabbix import *
 from socket import *
 from subprocess import call
@@ -17,7 +23,6 @@ import gtk
 import logging
 import os
 import re
-import sys
 import time
 import warnings
 
@@ -289,6 +294,12 @@ class MyGtk:
 class TrayIcon:
     def __init__(self):
         self.__gmsg = MyGtk()
+        if gv.OS == "Linux":
+            try:
+                notify2.init(gv.script_name)
+            except:
+                logging.error("Can't connect to notification daemon")
+                sys.exit(2)
 
     def check(self):
         zbx.status("filtered")
@@ -298,16 +309,31 @@ class TrayIcon:
             logging.warning('%s status (GUI): %s', gv.zbxhost, gv.zbx_status)
         if gv.zbx_status != gv.zbx_last_status:
             gv.zbx_last_status = gv.zbx_status
-            tmo=(10 if gv.zbx_status == "ok" else 0)
-            if gv.zbxnotify:
-                notification.notify(
-                    title="Zabbix: " + gv.zbxhost,
-                    message=gv.zbx_status,
-                    app_name=gv.script_name,
-                    app_icon="",
-                    timeout=tmo,
-                    ticker=gv.script_short_name,
-                )
+            if gv.OS == "Linux":
+                n = notify2.Notification("Zabbix: " + gv.zbxhost, gv.zbx_status)
+                if gv.zbx_status == "ok":
+                    n.set_urgency(1)
+                else:
+                    n.set_urgency(2)
+                try:
+                    n.show()
+                except:
+                    logging.error("Can't connect to notification daemon")
+                    sys.exit(2)
+            else:
+                tmo=(10 if gv.zbx_status == "ok" else 0)
+                try:
+                    if gv.zbxnotify:
+                        notification.notify(
+                            title="Zabbix: " + gv.zbxhost,
+                            message=gv.zbx_status,
+                            app_name=gv.script_name,
+                            app_icon="",
+                            timeout=tmo,
+                            ticker=gv.script_short_name,
+                        )
+                except:
+                    pass
             if gv.zbxwav is not None and gv.OS == "Linux":
                 try:
                     f = open('/dev/null', 'w')
