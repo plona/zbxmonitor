@@ -423,6 +423,7 @@ class MyZbx:
         return gv.zbx_status
 
     def add_to_rval(self, t, rval, extmode=False):
+        # print "adding\n"
         if int(t["value"]) == 1:
             if extmode:
                 rval[0] += ("{0} - {1} {2}".format(t['hosts'][0]['host'], t['description'], '(Unack)' if t['unacknowledged'] else '') + "\n\n")
@@ -433,6 +434,33 @@ class MyZbx:
             else:
                 rval[0] += ("{0} - {1} {2}".format(t['hosts'][0]['host'], t['description'], '(Unack)' if t['unacknowledged'] else '') + "\n\n")
         return
+
+    def filter(self, mode, t, rval):
+        if mode   == "exclude": fltList = gv.zbxExclTg
+        elif mode == "include": fltList = gv.zbxInclTg
+        else: return
+
+        checked = to_add = False
+        for flt in fltList:
+            # print "host/flt/description:", t['hosts'][0]['host'], flt, "|", t['description'], "|"
+            if re.search(flt, t['description']):
+                if mode == "exclude":
+                    checked = True
+                    to_add = False
+                    continue
+                else:
+                    if checked: continue
+                    to_add = True
+            else:
+                if mode == "exclude":
+                    if checked: continue
+                    to_add = True
+                else:
+                    checked = True
+                    to_add = False
+                    continue
+        if to_add: self.add_to_rval(t, rval)
+
 
     def get_triggers(self, mode="all"):
         try:
@@ -472,33 +500,9 @@ class MyZbx:
             # print "description/ack:", t['description'], "|", t['unacknowledged']
             if mode == "filtered":
                 if len(gv.zbxExclTg) > 0:
-                    checked = False
-                    to_add = False
-                    for flt in gv.zbxExclTg:
-                        # print "host/flt/description:", t['hosts'][0]['host'], flt, "|", t['description'], "|"
-                        if re.search(flt, t['description']):
-                            checked = True
-                            to_add = False
-                            continue
-                        else:
-                            if checked:
-                                continue
-                            to_add = True
-                    if to_add: self.add_to_rval(t, rval)
+                    self.filter("exclude", t, rval)
                 elif len(gv.zbxInclTg) > 0:
-                    checked = False
-                    to_add = False
-                    for flt in gv.zbxInclTg:
-                        # print "flt/description/ack:", flt, "|", t['description'], "|", t['unacknowledged']
-                        if re.search(flt, t['description']):
-                            if checked:
-                                continue
-                            to_add = True
-                        else:
-                            checked = True
-                            to_add = False
-                            continue
-                    if to_add: self.add_to_rval(t, rval)
+                    self.filter("include", t, rval)
                 else:
                     self.add_to_rval(t, rval)
             elif mode == "unfiltered":
