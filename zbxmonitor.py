@@ -305,8 +305,10 @@ class TrayIcon:
         zbx.status("filtered")
         if gv.zbx_status == "ok":
             logging.info('%s status (GUI): %s', gv.zbxhost, gv.zbx_status)
+            sys.stdout.flush()
         else:
             logging.warning('%s status (GUI): %s', gv.zbxhost, gv.zbx_status)
+            sys.stdout.flush()
         if gv.zbx_status != gv.zbx_last_status:
             gv.zbx_last_status = gv.zbx_status
             if gv.OS == "Linux":
@@ -322,8 +324,8 @@ class TrayIcon:
                     sys.exit(2)
             else:
                 tmo=(10 if gv.zbx_status == "ok" else 0)
-                try:
-                    if gv.zbxnotify:
+                if gv.zbxnotify:
+                    try:
                         notification.notify(
                             title="Zabbix: " + gv.zbxhost,
                             message=gv.zbx_status,
@@ -332,8 +334,9 @@ class TrayIcon:
                             timeout=tmo,
                             ticker=gv.script_short_name,
                         )
-                except:
-                    pass
+                    except:
+                        logging.error("Can't connect to notification daemon")
+                        pass
             if gv.zbxwav is not None and gv.OS == "Linux":
                 try:
                     f = open('/dev/null', 'w')
