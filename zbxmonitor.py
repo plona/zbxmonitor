@@ -472,19 +472,33 @@ class MyZbx:
             # print "description/ack:", t['description'], "|", t['unacknowledged']
             if mode == "filtered":
                 if len(gv.zbxExclTg) > 0:
+                    checked = False
+                    to_add = False
                     for flt in gv.zbxExclTg:
-                        # print "flt/description/ack:", flt, "|", t['description'], "|", t['unacknowledged']
+                        # print "host/flt/description:", t['hosts'][0]['host'], flt, "|", t['description'], "|"
                         if re.search(flt, t['description']):
+                            checked = True
+                            to_add = False
                             continue
                         else:
-                            self.add_to_rval(t, rval)
+                            if checked:
+                                continue
+                            to_add = True
+                    if to_add: self.add_to_rval(t, rval)
                 elif len(gv.zbxInclTg) > 0:
+                    checked = False
+                    to_add = False
                     for flt in gv.zbxInclTg:
                         # print "flt/description/ack:", flt, "|", t['description'], "|", t['unacknowledged']
                         if re.search(flt, t['description']):
-                            self.add_to_rval(t, rval)
+                            if checked:
+                                continue
+                            to_add = True
                         else:
+                            checked = True
+                            to_add = False
                             continue
+                    if to_add: self.add_to_rval(t, rval)
                 else:
                     self.add_to_rval(t, rval)
             elif mode == "unfiltered":
