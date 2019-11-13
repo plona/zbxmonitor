@@ -1,3 +1,7 @@
+2019-11-13 Wed 12:54:59 PM
+Added hostname to filters. Filtering now operates on string:
+<hostname> + " " + <trigger_description>
+
 2019-11-07 Thu 10:38:11 AM
 Fixed erors in filters.
 
