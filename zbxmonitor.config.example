@@ -11,6 +11,7 @@ url = https://host.example.com/zabbix
 [zbxOptions]
 ; all opions in this section are optional. Defaults:
 ; ackOnly = True
+; min_severity = 0
 ; icon = host[-ok.png|-err.png]
 ; ignore_warn = False
 ; interval = 30[s]

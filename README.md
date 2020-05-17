@@ -28,6 +28,7 @@ Section `zbxCredenials` is described in `zbxmonitor.config.example`. Section `zb
 - ignore_warn - default: False. True - SSL warnings will be suppressed (when connecting to Zabbix Server via https)
 - interval - default: 30[s]. Pooling interval
 - log_truncate - default: False. If True (or 1) log file in ./log will be truncated at start.
+- min_severity - default: 0. Return only triggers with severity greater or equal than the given severity. **Change reuires restart.** Range 0..5.
 - notify - default: True. Messages will be send to notification daemon (eg. `dunst`). If False (or 0) you will be not notified, but status will be still enabled by left or right click on script icon.
 - port - default: 10051
 - text_mode - default: False. If True (or 0) zbxmonitor will work in text mode only. It is rather for testing purpose.
@@ -61,4 +62,4 @@ I don't know how to daemonize script - there is no `fork` in windows. But you ca
 ```
 <path_to_pythonw.exe> <path_to_script>
 ```
-Notification in windows sometime works, but sometime doesn't. I don't know why - I'm very beginner windows user. Icon i tray works fine.
+Notification in windows sometime works, but sometime doesn't. I don't know why - I'm very beginner windows user. Icon in tray works fine.

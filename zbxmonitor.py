@@ -61,6 +61,7 @@ class GlobVars:
             "wav": None,
             "wav_player": "/usr/bin/mpv",
             "ackOnly": True,
+            "min_severity": 0,
             "exclTg": [],
             "inclTg": []
         }
@@ -113,6 +114,10 @@ class GlobVars:
             self.zbxackOnly = ast.literal_eval(self.config.get("zbxOptions", "ackOnly"))
         except:
             self.zbxackOnly = self.defaults["ackOnly"]
+        try:
+            self.zbxmin_severity = int(self.config.get("zbxOptions", "min_severity"))
+        except:
+            self.zbxmin_severity = self.defaults["min_severity"]
         try:
             self.zbxExclTg = ast.literal_eval(self.config.get("zbxOptions", "exclTg"))
         except:
@@ -248,7 +253,7 @@ class MyGtk:
         close_item.connect_object("activate", self.close_app, "Really close?")
         close_item.show()
 
-        if gv.zbx_connected == 'ok':
+        if gv.zbx_connected == 'ok' and gv.zbx_ping == "ok":
             menu.append(show_all_item)
             show_all_item.connect_object("activate", self.show_all_triggers, "show all triggers")
             show_all_item.show()
@@ -475,6 +480,7 @@ class MyZbx:
                                              output='extend',
                                              expandDescription=1,
                                              selectHosts=['host'],
+                                             min_severity = gv.zbxmin_severity,
                                              )
 
             # Do another query to find out which issues are Unacknowledged
@@ -486,6 +492,7 @@ class MyZbx:
                                                    expandDescription=1,
                                                    selectHosts=['host'],
                                                    withLastEventUnacknowledged=1,
+                                                   min_severity = gv.zbxmin_severity,
                                                    )
             gv.zbx_connected = 'ok'
         except:
