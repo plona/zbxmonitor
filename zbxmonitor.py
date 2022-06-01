@@ -451,7 +451,7 @@ class MyZbx:
         checked = to_add = False
         for flt in fltList:
             # print "host/flt/description:", t['hosts'][0]['host'], flt, "|", t['description'], "|"
-            if re.search(flt, t['hosts'][0]['host'] + " " + t['description']):
+            if re.search(flt, t['hosts'][0]['host'] + " " + t['description'], re.IGNORECASE):
                 if mode == "exclude":
                     checked = True
                     to_add = False
